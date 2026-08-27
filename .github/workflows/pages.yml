@@ -11,20 +11,22 @@
 # Turning Pages on is still a one time manual step: Settings, Pages, Source
 # "Deploy from a branch", branch gh-pages, folder / (root).
 #
-# Why the checksum gate
-# --------------------
-# The site was moved here through an API that only accepts text, which cannot
-# carry the byte locked truck JPEG or the woff2 fonts without corrupting them.
-# Every file that ships is therefore verified against a pinned sha256 before it
-# can be published. A mismatch fails the build instead of shipping an altered
-# site. README.md is deliberately not gated, since it is documentation and never
-# reaches _site.
+# What is gated, and what is not
+# ------------------------------
+# The binary assets are byte locked. The truck JPEG is a shared Shipfront asset
+# and the four woff2 faces are the exact Google Fonts payloads, so any change to
+# their bytes is a corruption rather than an edit and the build refuses to ship.
+# They are pinned by hash below.
 #
-# The verified files are already committed on claw, so the restore step below is
-# normally a no-op. SEED_BASE was a temporary host used for the first run only
-# and is expected to be gone; it is kept as a record of provenance. If a shipped
-# file ever goes stale and that host is unreachable, the build fails loudly,
-# which is the intended behaviour.
+# The HTML, CSS, JavaScript, and the drawn SVG plates are source. They are
+# meant to change, so they are checked against the design lock instead: the
+# page count, the H1, the palette, the mark geometry, the address, the form,
+# the footer credit, and the no dash rule.
+#
+# An earlier revision of this file also tried to restore the text files from a
+# temporary seed host over HTTP. That host is gone, and the files have been
+# committed here since, so the restore step has been removed. Nothing in the
+# build reaches the network any more.
 
 name: Publish THE PRESS
 
@@ -40,115 +42,116 @@ concurrency:
   group: pages
   cancel-in-progress: false
 
-env:
-  SEED_BASE: https://numeric-chess-gmbh-opportunity.trycloudflare.com
-  CRATE_JPEG: https://davidtphung.github.io/shipfront-the-crate/images/logistics.jpg
-
 jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Restore and verify every shipped file
-        run: |
-          set -uo pipefail
-
-          # get <url> <path> <sha256>
-          # Downloads only when the file is missing or its hash does not match.
-          get() {
-            url="$1"; path="$2"; want="$3"
-
-            if [ -f "$path" ]; then
-              have=$(sha256sum "$path" | awk '{print $1}')
-              if [ "$have" = "$want" ]; then
-                echo "ok       $path"
-                return 0
-              fi
-              echo "stale    $path, refetching"
-            fi
-
-            mkdir -p "$(dirname "$path")"
-            if ! curl -fsSL --retry 4 --retry-delay 3 --max-time 120 -o "$path.tmp" "$url"; then
-              echo "::error::could not download $path from $url"
-              rm -f "$path.tmp"
-              return 1
-            fi
-
-            have=$(sha256sum "$path.tmp" | awk '{print $1}')
-            if [ "$have" != "$want" ]; then
-              echo "::error::checksum mismatch for $path"
-              echo "  expected $want"
-              echo "  actual   $have"
-              rm -f "$path.tmp"
-              return 1
-            fi
-
-            mv "$path.tmp" "$path"
-            echo "fetched  $path"
-          }
-
-          fail=0
-
-          get "$SEED_BASE/.seed/index.txt"   index.html   2aa5f38602089906a3fbfe2d5856ecb849d3bf9c78fdb77532022cc7fe568147 || fail=1
-          get "$SEED_BASE/.seed/quote.txt"   quote.html   89ec7a8f02c6f4480c9d093493efd2790d52096ad6c2b495d5986551566f2792 || fail=1
-          get "$SEED_BASE/.seed/contact.txt" contact.html ace870627c1a17961a7247946d658507d8deddca7a8a6187bb747be538819c13 || fail=1
-
-          get "$SEED_BASE/css/press.css" css/press.css 6c0d4e03c2eadf628dd449ae6ff9cd5b8ae5670f208580c9e7de6086b865d616 || fail=1
-          get "$SEED_BASE/js/press.js"   js/press.js   c5324e2fcff77e5258adf7c11545541b8fc96aee073d3207d0983592b3a65373 || fail=1
-          get "$SEED_BASE/favicon.svg"   favicon.svg   5c7c51faeaf6c00426196f0642f06a9770cd6e1422e37f5a2639b41836240055 || fail=1
-
-          get "$CRATE_JPEG" images/logistics.jpg b01f32be4f626f47d78c3c7c186c46ae0d6a804a23912b8d259edaf24da00666 || fail=1
-
-          SG=https://fonts.gstatic.com/s/spacegrotesk/v22
-          JB=https://fonts.gstatic.com/s/jetbrainsmono/v24
-          get "$SG/V8mDoQDjQSkFtoMM3T6r8E7mPbF4Cw.woff2" fonts/space-grotesk-var-latin.woff2 0640890476fc1198ab4de571fb658de443c4d85b66466ec09534a8737ab1ce9d || fail=1
-          get "$SG/V8mDoQDjQSkFtoMM3T6r8E7mPb94C-s0.woff2" fonts/space-grotesk-var-latin-ext.woff2 952dddb45d2f96f71cbf3b7f510b24379afc3c89ea02fcf89d377b45d62c0166 || fail=1
-          get "$JB/tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxDcwg.woff2" fonts/jetbrains-mono-var-latin.woff2 83c005d49d8a6a50474c73a5a36ac0468076e9c4a29da7bdb14995d80560a5be || fail=1
-          get "$JB/tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx7cwhsk.woff2" fonts/jetbrains-mono-var-latin-ext.woff2 db5ff4db83e580426280e9337a58dc57d3a83784a1b03ad80914651594441d52 || fail=1
-
-          if [ "$fail" -ne 0 ]; then
-            echo "::error::one or more files failed to verify, refusing to publish"
-            exit 1
-          fi
-
-      - name: Assert the locks still hold
+      - name: Verify the byte locked assets
         run: |
           set -euo pipefail
 
           echo "01268520751d59bf9762d2d7d7c3e1555ba60c8d  images/logistics.jpg" | sha1sum -c -
+
           size=$(stat -c%s images/logistics.jpg)
           if [ "$size" -ne 376501 ]; then
             echo "::error::truck JPEG is $size bytes, expected 376501"
             exit 1
           fi
 
-          grep -q 'You Sell.' index.html
-          grep -q 'We Ship.' index.html
+          sha256sum -c - <<'SUMS'
+          b01f32be4f626f47d78c3c7c186c46ae0d6a804a23912b8d259edaf24da00666  images/logistics.jpg
+          0640890476fc1198ab4de571fb658de443c4d85b66466ec09534a8737ab1ce9d  fonts/space-grotesk-var-latin.woff2
+          952dddb45d2f96f71cbf3b7f510b24379afc3c89ea02fcf89d377b45d62c0166  fonts/space-grotesk-var-latin-ext.woff2
+          83c005d49d8a6a50474c73a5a36ac0468076e9c4a29da7bdb14995d80560a5be  fonts/jetbrains-mono-var-latin.woff2
+          db5ff4db83e580426280e9337a58dc57d3a83784a1b03ad80914651594441d52  fonts/jetbrains-mono-var-latin-ext.woff2
+          SUMS
 
-          for page in index.html quote.html contact.html; do
-            test -s "$page"
+          echo "byte locks hold"
+
+      - name: Assert the design lock still holds
+        run: |
+          set -euo pipefail
+
+          pages="index.html quote.html contact.html"
+          source_files="$pages css/press.css js/press.js favicon.svg"
+
+          fail=0
+          bad() { echo "::error::$1"; fail=1; }
+
+          # Three pages, no more. Any other page at the repo root is a new
+          # marketing page and this site does not get one.
+          for page in $pages; do
+            test -s "$page" || bad "$page is missing or empty"
+          done
+          extra=$(ls -1 *.html | grep -vx -e index.html -e quote.html -e contact.html || true)
+          if [ -n "$extra" ]; then
+            bad "unexpected page(s): $(echo "$extra" | tr '\n' ' ')"
+          fi
+
+          # The H1 on Home.
+          grep -q 'You Sell.' index.html || bad "Home lost 'You Sell.'"
+          grep -q 'We Ship.'  index.html || bad "Home lost 'We Ship.'"
+
+          # The four things, and never as tabs.
+          for thing in Warehousing Fulfillment 'eCommerce Integrations' Location; do
+            grep -q "$thing" index.html || bad "Home lost '$thing'"
+          done
+          if grep -q 'role="tab' $pages; then
+            bad "found role=tab, the four things are rows and tiles, never tabs"
+          fi
+
+          # The form is three fields and there is no phone number anywhere.
+          for field in 'name="name"' 'name="email"' 'name="company"'; do
+            grep -q "$field" quote.html || bad "quote form lost $field"
+          done
+          grep -q 'No phone number' quote.html || bad "quote page lost the no phone line"
+          if grep -riE 'href="tel:' $pages; then
+            bad "found a telephone link, this site has no phone number"
+          fi
+
+          # The address, with the zip, and the one inbox.
+          for page in $pages; do
+            grep -q '1933 S. Broadway' "$page" || bad "$page lost the street address"
+            grep -q '90007' "$page" || bad "$page lost the zip"
+            grep -q 'mailto:info@myshipfront.com' "$page" || bad "$page lost the mailto"
+            grep -q 'Built by <b>David T Phung</b>' "$page" || bad "$page lost the footer credit"
           done
 
-          if grep -rlP '\x{2014}|\x{2013}' index.html quote.html contact.html css/press.css js/press.js; then
-            echo "::error::found an em or en dash in the site"
+          # The mark is the 1A EVEN cube stamp. Not 2G YAW.
+          for file in $pages favicon.svg; do
+            grep -q 'M7 9 L12 6' "$file" || bad "$file lost the cube stamp geometry"
+          done
+
+          # Paint. One signal, and it is not the SHEET orange.
+          grep -qi 'f7f5ef' css/press.css || bad "lost the paper token"
+          grep -qi 'ff2d2d' css/press.css || bad "lost the signal token"
+          if grep -riE 'ff6a00' $source_files images/*.svg; then
+            bad "found #FF6A00, this is THE PRESS and not SHEET"
+          fi
+
+          # Never white on red. Read the primary button rule and check the
+          # colour it actually sets.
+          primary=$(awk '/^\.btn--signal \{/,/^\}/' css/press.css)
+          if ! printf '%s' "$primary" | grep -q 'color: var(--ink)'; then
+            bad "the primary button must set ink on the red fill"
+          fi
+          if printf '%s' "$primary" | grep -q 'color: var(--sheet)'; then
+            bad "the primary button is ink on red, never white on red"
+          fi
+
+          # No em or en dashes anywhere the reader can see them.
+          if grep -rlP '\x{2014}|\x{2013}' $source_files images/*.svg; then
+            bad "found an em or en dash in the site"
+          fi
+
+          if [ "$fail" -ne 0 ]; then
+            echo "::error::the design lock was broken, refusing to publish"
             exit 1
           fi
 
           echo "all locks hold"
-
-      - name: Commit anything the restore step had to replace
-        run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          if git diff --cached --quiet; then
-            echo "repository already holds the verified site"
-          else
-            git commit -m "Refresh verified static site files [skip ci]"
-            git push
-          fi
 
       - name: Assemble the site
         run: |
