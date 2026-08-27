@@ -22,6 +22,21 @@ dependencies.
 Navigation is Home / Get a Quote / Contact. The only call to action anywhere on the site is
 **Get a Quote**.
 
+## Published copy
+
+- `claw` holds the source, including the fonts and the truck JPEG.
+- `gh-pages` holds the built site and is refreshed by
+  `.github/workflows/pages.yml` on every push to `claw`.
+
+**GitHub Pages still needs one manual switch.** The workflow token cannot create
+a Pages site, because that endpoint requires repository admin. To turn it on:
+Settings, then Pages, then set Source to "Deploy from a branch", pick branch
+`gh-pages` and folder `/ (root)`, then Save. The site then answers at
+https://davidtphung.github.io/shipfront-the-press/ and stays current on its own.
+
+Routing is flat: `/`, `/quote.html`, `/contact.html`. Every link and asset path is
+relative, so the site works unchanged from a subdirectory.
+
 ## Run it locally
 
 Any static file server works. There is nothing to install and nothing to compile.
@@ -104,7 +119,7 @@ images/logistics.jpg  Freight truck plate
 ### The truck image
 
 `images/logistics.jpg` is a byte for byte copy of the shared Shipfront asset. Do not
-regenerate or re-encode it.
+regenerate or re-encode it. The publish workflow asserts both values on every run.
 
 ```
 sha1  01268520751d59bf9762d2d7d7c3e1555ba60c8d
@@ -131,6 +146,8 @@ This site describes a warehouse. It does not describe a software product.
 - No invented SLAs, no FDA or temperature claims, no WMS, no metrics, no shipment IDs, no
   carrier tables, no AI chat, no Pricing page, no Developers page.
 - No em dashes anywhere in the copy.
+
+The publish workflow enforces the H1 and the no dash rule on every run.
 
 ## Accessibility
 
