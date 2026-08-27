@@ -14,7 +14,7 @@
     <meta property="og:title" content="Shipfront &middot; You Sell. We Ship." />
     <meta
       property="og:description"
-      content="A third party logistics warehouse at 1933 S. Broadway, Los Angeles."
+      content="A third party logistics warehouse at 1933 S. Broadway, Los Angeles, CA 90007."
     />
     <meta property="og:image" content="images/logistics.jpg" />
     <meta name="twitter:card" content="summary_large_image" />
@@ -37,11 +37,11 @@
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   </head>
 
-  <body>
+  <body data-sheet="closed">
     <a class="skip" href="#main">Skip to content</a>
 
     <!-- ================= MASTHEAD ================= -->
-    <header class="masthead">
+    <header class="masthead" data-settled="false">
       <div class="wrap masthead__in">
         <a class="brand" href="index.html" aria-label="Shipfront, home">
           <span class="stamp" aria-hidden="true">
@@ -66,22 +66,51 @@
           </a>
         </nav>
 
-        <button class="burger" type="button" data-burger aria-expanded="false" aria-controls="drawer">
+        <button
+          class="burger"
+          type="button"
+          data-sheet-open
+          aria-expanded="false"
+          aria-controls="sheet"
+        >
           <span class="burger__bars" aria-hidden="true"><i></i><i></i><i></i></span>
           Menu
         </button>
       </div>
+      <span class="masthead__read" data-read aria-hidden="true"></span>
     </header>
 
-    <div class="drawer" id="drawer" data-open="false">
-      <div class="wrap drawer__in">
-        <a href="index.html">Home</a>
-        <a href="quote.html">Get a Quote</a>
-        <a href="contact.html">Contact</a>
-        <a class="btn btn--signal" href="quote.html">
-          Get a Quote <span class="btn__arrow" aria-hidden="true">&rarr;</span>
-        </a>
+    <!-- ================= SHEET ================= -->
+    <div class="sheet" id="sheet" data-sheet data-open="false" data-live="false">
+      <div
+        class="sheet__panel"
+        data-sheet-panel
+        role="dialog"
+        aria-modal="true"
+        aria-label="Menu"
+      >
+        <div class="wrap sheet__in">
+          <div class="sheet__head">
+            <p class="plate-k sheet__k">Shipfront <span aria-hidden="true">&middot;</span> Index</p>
+            <button class="sheet__x" type="button" data-sheet-close>Close</button>
+          </div>
+          <a class="sheet__link" href="index.html" aria-current="page"><b>01</b> Home</a>
+          <a class="sheet__link" href="quote.html"><b>02</b> Get a Quote</a>
+          <a class="sheet__link" href="contact.html"><b>03</b> Contact</a>
+          <a class="btn btn--signal" href="quote.html">
+            Get a Quote <span class="btn__arrow" aria-hidden="true">&rarr;</span>
+          </a>
+          <span class="sheet__rail" aria-hidden="true"></span>
+        </div>
       </div>
+      <button
+        class="sheet__scrim"
+        type="button"
+        data-sheet-scrim
+        data-sheet-close
+        tabindex="-1"
+        aria-label="Close menu"
+      ></button>
     </div>
 
     <main id="main">
@@ -149,7 +178,7 @@
               src="images/logistics.jpg"
               width="1600"
               height="900"
-              alt="A freight truck on the road, hauling goods for delivery."
+              alt="A row of freight trucks lined up in a yard, waiting to be loaded."
               loading="lazy"
               decoding="async"
             />
@@ -161,7 +190,7 @@
         </div>
       </section>
 
-      <!-- ================= WHY ================= -->
+      <!-- ================= WHY: CAPABILITY TILES ================= -->
       <section class="sec sec--rule" id="why">
         <div class="wrap">
           <div class="sec__head">
@@ -175,42 +204,109 @@
             </p>
           </div>
 
-          <ul class="rows" data-stagger="70">
-            <li class="row" data-rise>
-              <span class="row__no">01</span>
-              <h3 class="row__title">Warehousing</h3>
-              <p class="row__body">
-                Your inventory lands at our dock, gets counted in, and goes on our shelves.
-                Room to hold what you have and what you order next.
-              </p>
-              <span class="row__mark" aria-hidden="true">&rarr;</span>
+          <ul class="tiles" data-stagger="90">
+            <li>
+              <a class="tile" href="quote.html" data-rise-plate>
+                <div class="tile__still">
+                  <img
+                    src="images/plate-warehousing.svg"
+                    width="1200"
+                    height="840"
+                    alt="Drawing of a four bay pallet rack loaded with cartons, one carton marked in red."
+                    loading="lazy"
+                    decoding="async"
+                  />
+                  <span class="plate-k tile__no">01</span>
+                </div>
+                <div class="tile__body">
+                  <h3 class="tile__t">Warehousing</h3>
+                  <p class="tile__b">
+                    Your inventory lands at our dock, gets counted in, and goes on our
+                    shelves. Room to hold what you have and what you order next.
+                  </p>
+                  <span class="tile__cta">
+                    Get a Quote <i aria-hidden="true">&rarr;</i>
+                  </span>
+                </div>
+              </a>
             </li>
-            <li class="row" data-rise>
-              <span class="row__no">02</span>
-              <h3 class="row__title">Fulfillment</h3>
-              <p class="row__body">
-                Orders come in, we pull them, box them, label them, and hand them to the
-                carrier. You never touch a roll of tape.
-              </p>
-              <span class="row__mark" aria-hidden="true">&rarr;</span>
+
+            <li>
+              <a class="tile" href="quote.html" data-rise-plate>
+                <div class="tile__still">
+                  <img
+                    src="images/plate-fulfillment.svg"
+                    width="1200"
+                    height="840"
+                    alt="Drawing of a packed carton on a belt carrying a shipping label, with a red route stamp."
+                    loading="lazy"
+                    decoding="async"
+                  />
+                  <span class="plate-k tile__no">02</span>
+                </div>
+                <div class="tile__body">
+                  <h3 class="tile__t">Fulfillment</h3>
+                  <p class="tile__b">
+                    Orders come in, we pull them, box them, label them, and hand them to
+                    the carrier. You never touch a roll of tape.
+                  </p>
+                  <span class="tile__cta">
+                    Get a Quote <i aria-hidden="true">&rarr;</i>
+                  </span>
+                </div>
+              </a>
             </li>
-            <li class="row" data-rise>
-              <span class="row__no">03</span>
-              <h3 class="row__title">eCommerce Integrations</h3>
-              <p class="row__body">
-                We connect to the store you already sell on, so orders reach the floor
-                without you forwarding a spreadsheet.
-              </p>
-              <span class="row__mark" aria-hidden="true">&rarr;</span>
+
+            <li>
+              <a class="tile" href="quote.html" data-rise-plate>
+                <div class="tile__still">
+                  <img
+                    src="images/plate-integrations.svg"
+                    width="1200"
+                    height="840"
+                    alt="Drawing of five storefronts wired down into one receiving dock, with one route in red."
+                    loading="lazy"
+                    decoding="async"
+                  />
+                  <span class="plate-k tile__no">03</span>
+                </div>
+                <div class="tile__body">
+                  <h3 class="tile__t">eCommerce Integrations</h3>
+                  <p class="tile__b">
+                    We connect to the store you already sell on, so orders reach the floor
+                    without you forwarding a spreadsheet.
+                  </p>
+                  <span class="tile__cta">
+                    Get a Quote <i aria-hidden="true">&rarr;</i>
+                  </span>
+                </div>
+              </a>
             </li>
-            <li class="row" data-rise>
-              <span class="row__no">04</span>
-              <h3 class="row__title">Location</h3>
-              <p class="row__body">
-                Downtown Los Angeles at 1933 S. Broadway. Close to the freeways, the ports,
-                and the carriers that move your freight.
-              </p>
-              <span class="row__mark" aria-hidden="true">&rarr;</span>
+
+            <li>
+              <a class="tile" href="quote.html" data-rise-plate>
+                <div class="tile__still">
+                  <img
+                    src="images/plate-location.svg"
+                    width="1200"
+                    height="840"
+                    alt="Drawing of the downtown Los Angeles street plan with the warehouse door marked in red on South Broadway."
+                    loading="lazy"
+                    decoding="async"
+                  />
+                  <span class="plate-k tile__no">04</span>
+                </div>
+                <div class="tile__body">
+                  <h3 class="tile__t">Location</h3>
+                  <p class="tile__b">
+                    Downtown Los Angeles at 1933 S. Broadway, CA 90007. Close to the
+                    freeways, the ports, and the carriers that move your freight.
+                  </p>
+                  <span class="tile__cta">
+                    Get a Quote <i aria-hidden="true">&rarr;</i>
+                  </span>
+                </div>
+              </a>
             </li>
           </ul>
         </div>
@@ -338,7 +434,7 @@
             <p class="foot__k">The Warehouse</p>
             <p class="foot__v">
               1933 S. Broadway<br />
-              Los Angeles, CA
+              Los Angeles, CA 90007
             </p>
           </div>
           <div>

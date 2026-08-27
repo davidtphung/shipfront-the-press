@@ -1,6 +1,14 @@
 /* ==========================================================================
    SHIPFRONT / THE PRESS
-   Bold editorial paper. Ink on newsprint, one red signal.
+   Bold editorial paper. Ink on newsprint, one red signal, radius zero.
+
+   Motion contract, in one place so it is hard to break:
+   - Springs live in js/press.js and own `transform` on anything pressable and
+     on the sheet. CSS never animates transform on those elements, or the two
+     fight over the same property.
+   - CSS owns hover colour, hairlines, and box-shadow. 220ms.
+   - Stills do not move at rest. A capability tile settles its chrome on hover,
+     never the image.
    ========================================================================== */
 
 /* --- Faces ---------------------------------------------------------------- */
@@ -62,16 +70,25 @@
   --rule-soft: rgba(17, 17, 17, 0.09);
   --rule-invert: rgba(255, 255, 255, 0.22);
 
+  /* The plate hairline. Every white or paper plate is bounded by this. */
+  --hair-plate: rgba(0, 0, 0, 0.06);
+
   --display: "Space Grotesk", "Helvetica Neue", Arial, sans-serif;
-  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
 
   --gut: clamp(1.25rem, 4vw, 4.5rem);
   --max: 1440px;
   --r: 0px;
+  --r-plate: 2px;
 
   --fast: 160ms;
   --beat: 220ms;
   --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+
+  /* Written by js/press.js. --settle is the settling nav, 0 at the top of the
+     page and 1 once the masthead has landed. --read is scroll progress. */
+  --settle: 1;
+  --read: 0;
 }
 
 *,
@@ -98,7 +115,25 @@ body {
   overflow-x: hidden;
 }
 
-img {
+/* Press grain. Paper is never perfectly flat. */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  pointer-events: none;
+  opacity: 0.05;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.86' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='260' height='260' filter='url(%23g)'/%3E%3C/svg%3E");
+  background-size: 260px 260px;
+}
+
+body[data-sheet="open"] {
+  overflow: hidden;
+}
+
+img,
+svg {
   display: block;
   max-width: 100%;
 }
@@ -170,15 +205,6 @@ select {
   padding-inline: var(--gut);
 }
 
-.rule-top {
-  border-top: 1px solid var(--rule);
-}
-
-.rule-red {
-  height: 6px;
-  background: var(--signal);
-}
-
 .eyebrow {
   font-family: var(--mono);
   font-size: clamp(0.62rem, 1.1vw, 0.72rem);
@@ -193,14 +219,65 @@ select {
   margin-inline: 0.55em;
 }
 
+/* The 11px caps label that sits on every plate. */
+.plate-k {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
 /* --- Masthead ------------------------------------------------------------- */
+
+/* Settling nav. At the top of the page the bar is bare type sitting on the
+   paper. Once it has been scrolled past it settles: the ink rule draws in,
+   a light paper material comes up under it, and the read rule appears.
+
+   --settle defaults to 1 so a page with no scripting gets the landed, solid
+   masthead rather than a transparent one. press.js takes it to 0 on boot and
+   springs it from there. Nothing here changes layout, so settling can never
+   shift the page under a pointer. */
 
 .masthead {
   position: sticky;
   top: 0;
   z-index: 90;
   background: var(--paper);
+  background: rgb(247 245 239 / var(--settle));
   border-bottom: 1px solid var(--ink);
+  border-bottom-color: rgb(17 17 17 / var(--settle));
+}
+
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+  .masthead {
+    background: transparent;
+  }
+
+  .masthead::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    opacity: var(--settle);
+    background: rgb(247 245 239 / 0.78);
+    -webkit-backdrop-filter: saturate(1.06) blur(14px);
+    backdrop-filter: saturate(1.06) blur(14px);
+  }
+}
+
+/* Read rule. Scroll progress in the one signal colour, transform only. */
+.masthead__read {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  background: var(--signal);
+  transform: scaleX(var(--read));
+  transform-origin: 0 50%;
+  pointer-events: none;
 }
 
 .masthead__in {
@@ -225,14 +302,12 @@ select {
   place-items: center;
   border: 1px solid var(--ink);
   background: transparent;
-  transition: transform var(--beat) var(--ease),
-    border-color var(--beat) var(--ease), background-color var(--beat) var(--ease);
+  transition: border-color var(--beat) var(--ease);
 }
 
 .stamp svg {
   width: 26px;
   height: 26px;
-  display: block;
 }
 
 .stamp path {
@@ -246,7 +321,6 @@ select {
 
 .brand:hover .stamp,
 .brand:focus-visible .stamp {
-  transform: translateY(1px);
   border-color: var(--signal);
 }
 
@@ -304,11 +378,13 @@ select {
   content: "";
   position: absolute;
   left: 0;
-  right: 100%;
+  right: 0;
   bottom: 0;
   height: 2px;
   background: var(--signal);
-  transition: right var(--beat) var(--ease);
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  transition: transform var(--beat) var(--ease);
 }
 
 .nav__link:hover,
@@ -318,7 +394,7 @@ select {
 
 .nav__link:hover::after,
 .nav__link[aria-current="page"]::after {
-  right: 0;
+  transform: scaleX(1);
 }
 
 .nav__cta {
@@ -331,13 +407,25 @@ select {
   }
 }
 
-/* Mobile drawer */
+.nav--desk {
+  display: none;
+}
+
+@media (min-width: 760px) {
+  .nav--desk {
+    display: flex;
+  }
+}
+
+/* --- Sheet trigger -------------------------------------------------------- */
+
 .burger {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
   background: none;
   border: 1px solid var(--ink);
+  border-radius: var(--r);
   padding: 0.5rem 0.7rem;
   cursor: pointer;
   font-family: var(--mono);
@@ -365,53 +453,120 @@ select {
   }
 }
 
-.drawer {
-  display: none;
-  border-bottom: 1px solid var(--ink);
-  background: var(--paper);
-}
+/* --- Sheet ---------------------------------------------------------------- */
 
-.drawer[data-open="true"] {
-  display: block;
-}
+/* An interruptible sheet, not a toggled block. The panel is always in the
+   tree so the spring in press.js has something to hold at any fraction; it is
+   made inert and unfocusable while it is fully closed. */
 
-@media (min-width: 760px) {
-  .drawer,
-  .drawer[data-open="true"] {
-    display: none;
-  }
-}
-
-.drawer__in {
-  padding-block: 0.5rem 1.5rem;
+.sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
   display: grid;
+  grid-template-rows: auto 1fr;
+  pointer-events: none;
+  visibility: hidden;
 }
 
-.drawer a {
-  padding: 1rem 0;
-  border-bottom: 1px solid var(--rule-soft);
-  font-size: 1.5rem;
+.sheet[data-live="true"] {
+  pointer-events: auto;
+  visibility: visible;
+}
+
+.sheet__scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(17, 17, 17, 0.42);
+  opacity: 0;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+.sheet__panel {
+  position: relative;
+  z-index: 1;
+  background: var(--paper);
+  border-bottom: 1px solid var(--ink);
+  transform: translate3d(0, -100%, 0);
+  will-change: transform;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.sheet__in {
+  display: grid;
+  padding-block: 1rem 1.75rem;
+}
+
+.sheet__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 74px;
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: 0.5rem;
+}
+
+.sheet__k {
+  color: var(--mute);
+}
+
+.sheet__x {
+  background: none;
+  border: 1px solid var(--ink);
+  border-radius: var(--r);
+  padding: 0.5rem 0.7rem;
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 0.68rem;
   font-weight: 700;
-  letter-spacing: -0.02em;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
 }
 
-.drawer .btn {
+.sheet__link {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+  padding: 1.05rem 0;
+  border-bottom: 1px solid var(--rule-soft);
+  font-size: clamp(1.5rem, 7vw, 2.2rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.sheet__link b {
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: var(--signal);
+}
+
+.sheet__link[aria-current="page"] {
+  color: var(--signal);
+}
+
+.sheet .btn {
   margin-top: 1.35rem;
-  border-bottom: 0;
   justify-content: center;
 }
 
-.nav--desk {
-  display: none;
-}
-
-@media (min-width: 760px) {
-  .nav--desk {
-    display: flex;
-  }
+/* The grab rail. It says the sheet can be thrown, and it is the only thing
+   that hints at drag. */
+.sheet__rail {
+  width: 46px;
+  height: 3px;
+  background: var(--rule);
+  margin: 0.75rem auto 0;
 }
 
 /* --- Buttons -------------------------------------------------------------- */
+
+/* transform belongs to the spring in press.js. Everything below is colour,
+   hairline, and shadow, which is why none of these rules mention transform. */
 
 .btn {
   display: inline-flex;
@@ -426,9 +581,11 @@ select {
   letter-spacing: 0.14em;
   text-transform: uppercase;
   cursor: pointer;
-  transition: transform var(--beat) var(--ease),
-    background-color var(--beat) var(--ease), color var(--beat) var(--ease),
-    border-color var(--beat) var(--ease), box-shadow var(--beat) var(--ease);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color var(--beat) var(--ease),
+    color var(--beat) var(--ease), border-color var(--beat) var(--ease),
+    box-shadow var(--beat) var(--ease);
 }
 
 .btn--sm {
@@ -444,7 +601,7 @@ select {
   transform: translateX(4px);
 }
 
-/* Primary: ink on red */
+/* Primary: ink on red. Never white on red. */
 .btn--signal {
   background: var(--signal);
   color: var(--ink);
@@ -453,13 +610,12 @@ select {
 }
 
 .btn--signal:hover {
-  transform: translate(-2px, -2px);
-  box-shadow: 6px 6px 0 var(--ink);
+  box-shadow: 7px 7px 0 var(--ink);
 }
 
-.btn--signal:active {
-  transform: translate(2px, 2px);
-  box-shadow: 1px 1px 0 var(--ink);
+.btn--signal:active,
+.btn--signal[data-press="down"] {
+  box-shadow: 2px 2px 0 var(--ink);
 }
 
 /* Ghost on paper */
@@ -474,7 +630,7 @@ select {
   color: var(--sheet);
 }
 
-/* Ghost on ink: white on black */
+/* Ghost on ink */
 .btn--ghost-invert {
   background: transparent;
   color: var(--sheet);
@@ -493,20 +649,12 @@ select {
   padding-block: clamp(2.5rem, 7vw, 6rem) clamp(2rem, 5vw, 3.5rem);
 }
 
-.hero__meta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.2rem 0.4rem;
-  padding-bottom: clamp(1.5rem, 4vw, 2.75rem);
-}
-
 .h1 {
   font-weight: 700;
-  font-size: clamp(3.6rem, 13.2vw, 12.5rem);
+  font-size: clamp(4.1rem, 13.6vw, 12.5rem);
   line-height: 0.85;
   letter-spacing: -0.045em;
-  text-transform: none;
+  margin-top: clamp(1.25rem, 3vw, 2rem);
 }
 
 .h1 .line {
@@ -671,7 +819,7 @@ select {
   font-weight: 700;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  padding: 0.85rem 0.85rem;
+  padding: 0.85rem;
   display: grid;
   place-items: center;
 }
@@ -724,6 +872,156 @@ select {
   line-height: 1.44;
   color: var(--mute);
   max-width: 42ch;
+}
+
+/* --- Capability tiles ----------------------------------------------------- */
+
+/* Image first. The still is the rest state and it does not move. Hover and
+   focus settle the chrome around it: the number takes the signal, the plate
+   lifts off paper onto sheet, the rule under the call to action draws in. */
+
+.tiles {
+  display: grid;
+  gap: clamp(1.25rem, 2.6vw, 2.25rem);
+  border-top: 1px solid var(--ink);
+  padding-top: clamp(1.5rem, 3vw, 2.5rem);
+}
+
+@media (min-width: 880px) {
+  .tiles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* A white plate on the paper, hairline bounded, corners square. */
+.tile {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--sheet);
+  border: 1px solid var(--hair-plate);
+  border-radius: var(--r-plate);
+  padding: clamp(0.75rem, 1.4vw, 1rem);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color var(--beat) var(--ease),
+    box-shadow var(--beat) var(--ease);
+}
+
+.tile:hover,
+.tile:focus-visible {
+  border-color: var(--rule);
+  box-shadow: 0 2px 0 var(--rule-soft);
+}
+
+.tile__still {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--r-plate);
+  background: var(--paper);
+  border: 1px solid var(--hair-plate);
+  transition: border-color var(--beat) var(--ease);
+}
+
+.tile:hover .tile__still,
+.tile:focus-visible .tile__still {
+  border-color: var(--rule);
+}
+
+.tile__still img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  object-position: center;
+}
+
+.tile__no {
+  position: absolute;
+  top: 0;
+  left: 0;
+  background: var(--sheet);
+  color: var(--ink);
+  padding: 0.62rem 0.8rem;
+  border-right: 1px solid var(--rule-soft);
+  border-bottom: 1px solid var(--rule-soft);
+  transition: color var(--beat) var(--ease),
+    background-color var(--beat) var(--ease);
+}
+
+.tile:hover .tile__no,
+.tile:focus-visible .tile__no {
+  background: var(--signal);
+  color: var(--ink);
+}
+
+.tile__body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  padding: clamp(1.35rem, 2.4vw, 1.85rem) clamp(0.5rem, 1vw, 0.9rem)
+    clamp(0.6rem, 1.1vw, 0.9rem);
+}
+
+.tile__t {
+  font-weight: 700;
+  font-size: clamp(1.75rem, 3.6vw, 2.6rem);
+  line-height: 0.96;
+  letter-spacing: -0.038em;
+}
+
+.tile__b {
+  color: var(--mute);
+  font-size: clamp(0.98rem, 1.4vw, 1.06rem);
+  line-height: 1.46;
+  margin-top: 0.8rem;
+  max-width: 42ch;
+  flex: 1;
+}
+
+.tile__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  align-self: flex-start;
+  position: relative;
+  margin-top: clamp(1.25rem, 2.4vw, 1.75rem);
+  padding-bottom: 0.5rem;
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.tile__cta::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: var(--signal);
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  transition: transform var(--beat) var(--ease);
+}
+
+.tile:hover .tile__cta::after,
+.tile:focus-visible .tile__cta::after {
+  transform: scaleX(1);
+}
+
+.tile__cta i {
+  font-style: normal;
+  color: var(--signal);
+  transition: transform var(--beat) var(--ease);
+}
+
+.tile:hover .tile__cta i,
+.tile:focus-visible .tile__cta i {
+  transform: translateX(4px);
 }
 
 /* --- Numbered hairline rows ---------------------------------------------- */
@@ -1050,7 +1348,7 @@ select {
   background: var(--sheet);
   border: 1px solid var(--ink);
   border-radius: var(--r);
-  padding: 1.05rem 1.05rem;
+  padding: 1.05rem;
   font-size: 1.06rem;
   font-weight: 500;
   letter-spacing: -0.01em;
@@ -1084,7 +1382,6 @@ select {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--signal);
-  min-height: 0;
   display: none;
 }
 
@@ -1159,7 +1456,7 @@ select {
   border-bottom: 2px solid var(--signal);
 }
 
-/* --- Aside cards ---------------------------------------------------------- */
+/* --- Aside plates --------------------------------------------------------- */
 
 .aside {
   display: grid;
@@ -1191,9 +1488,9 @@ select {
 
 .card__k {
   font-family: var(--mono);
-  font-size: 0.68rem;
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--signal);
 }
@@ -1235,6 +1532,8 @@ select {
   gap: 1.5rem;
   padding: clamp(1.5rem, 3.4vw, 2.6rem) 0;
   border-bottom: 1px solid var(--rule);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
   transition: padding-left var(--beat) var(--ease),
     background-color var(--beat) var(--ease);
 }
@@ -1250,9 +1549,9 @@ select {
 
 .blink__k {
   font-family: var(--mono);
-  font-size: 0.68rem;
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--mute);
   margin-bottom: 0.85rem;
@@ -1320,7 +1619,7 @@ a.blink:hover .blink__arrow {
 
 .foot__k {
   font-family: var(--mono);
-  font-size: 0.66rem;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.2em;
   text-transform: uppercase;
@@ -1333,6 +1632,7 @@ a.blink:hover .blink__arrow {
   font-weight: 500;
   line-height: 1.45;
   letter-spacing: -0.01em;
+  font-style: normal;
 }
 
 .foot__v a {
@@ -1386,7 +1686,7 @@ a.blink:hover .blink__arrow {
   font-weight: 700;
 }
 
-/* --- Motion: clip up + stagger ------------------------------------------- */
+/* --- Reveal --------------------------------------------------------------- */
 
 /* The pre-reveal state is gated on [data-js="on"], which the inline head script
    sets and then clears if press.js never boots. Without it every headline and
@@ -1404,7 +1704,7 @@ a.blink:hover .blink__arrow {
 
 [data-js="on"] [data-clip] > * {
   transform: translateY(102%);
-  transition: transform 780ms var(--ease);
+  transition: transform 760ms var(--ease);
   transition-delay: var(--d, 0ms);
 }
 
@@ -1414,8 +1714,8 @@ a.blink:hover .blink__arrow {
 
 [data-js="on"] [data-rise] {
   opacity: 0;
-  transform: translateY(18px);
-  transition: opacity 620ms var(--ease), transform 620ms var(--ease);
+  transform: translate3d(0, 18px, 0);
+  transition: opacity 600ms var(--ease), transform 600ms var(--ease);
   transition-delay: var(--d, 0ms);
 }
 
@@ -1424,6 +1724,56 @@ a.blink:hover .blink__arrow {
   transform: none;
 }
 
+/* Tiles arrive a touch further and a touch smaller, then settle. */
+[data-js="on"] [data-rise-plate] {
+  opacity: 0;
+  transform: translate3d(0, 24px, 0) scale(0.98);
+  transform-origin: 50% 100%;
+  transition: opacity 680ms var(--ease), transform 680ms var(--ease);
+  transition-delay: var(--d, 0ms);
+}
+
+[data-js="on"] [data-rise-plate].is-in {
+  opacity: 1;
+  transform: none;
+}
+
+/* --- prefers-reduced-transparency ---------------------------------------- */
+
+/* Paper may carry a light material. It may never become grey glass, and when
+   the reader has asked for less transparency it goes solid. */
+
+@media (prefers-reduced-transparency: reduce) {
+  .masthead,
+  .masthead::before {
+    background: #f7f5ef;
+    opacity: 1;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  .masthead {
+    border-bottom-color: var(--ink);
+  }
+
+  .sheet__panel {
+    background: var(--paper);
+  }
+
+  .sheet__scrim {
+    background: var(--ink);
+  }
+
+  body::after {
+    display: none;
+  }
+}
+
+/* --- prefers-reduced-motion ----------------------------------------------- */
+
+/* Motion drops to an opacity cross fade. Scale and overshoot are removed, the
+   sheet still opens and closes, and no content is ever left hidden. */
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
@@ -1431,8 +1781,10 @@ a.blink:hover .blink__arrow {
 
   [data-clip] > *,
   [data-rise],
+  [data-rise-plate],
   [data-js="on"] [data-clip] > *,
-  [data-js="on"] [data-rise] {
+  [data-js="on"] [data-rise],
+  [data-js="on"] [data-rise-plate] {
     transform: none !important;
     opacity: 1 !important;
     transition: none !important;
@@ -1442,17 +1794,39 @@ a.blink:hover .blink__arrow {
     animation: none !important;
   }
 
-  .btn,
   .btn__arrow,
+  .tile__cta i,
   .row,
+  .row__mark,
   .blink,
+  .blink__arrow,
   .stamp,
-  .field input {
+  .field input,
+  .nav__link::after,
+  .tile__cta::after {
+    transition: none !important;
+    transform: none !important;
+  }
+
+  .masthead__read {
     transition: none !important;
   }
 
-  .btn--signal:hover,
-  .btn--signal:active {
-    transform: none;
+  .sheet__panel {
+    transform: none !important;
+    opacity: 0;
+    transition: opacity 140ms linear;
+  }
+
+  .sheet[data-open="true"] .sheet__panel {
+    opacity: 1;
+  }
+
+  .sheet__scrim {
+    transition: opacity 140ms linear;
+  }
+
+  .sheet__rail {
+    display: none;
   }
 }

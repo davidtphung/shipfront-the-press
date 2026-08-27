@@ -37,10 +37,10 @@
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   </head>
 
-  <body>
+  <body data-sheet="closed">
     <a class="skip" href="#main">Skip to content</a>
 
-    <header class="masthead">
+    <header class="masthead" data-settled="false">
       <div class="wrap masthead__in">
         <a class="brand" href="index.html" aria-label="Shipfront, home">
           <span class="stamp" aria-hidden="true">
@@ -65,22 +65,50 @@
           </a>
         </nav>
 
-        <button class="burger" type="button" data-burger aria-expanded="false" aria-controls="drawer">
+        <button
+          class="burger"
+          type="button"
+          data-sheet-open
+          aria-expanded="false"
+          aria-controls="sheet"
+        >
           <span class="burger__bars" aria-hidden="true"><i></i><i></i><i></i></span>
           Menu
         </button>
       </div>
+      <span class="masthead__read" data-read aria-hidden="true"></span>
     </header>
 
-    <div class="drawer" id="drawer" data-open="false">
-      <div class="wrap drawer__in">
-        <a href="index.html">Home</a>
-        <a href="quote.html">Get a Quote</a>
-        <a href="contact.html">Contact</a>
-        <a class="btn btn--signal" href="quote.html">
-          Get a Quote <span class="btn__arrow" aria-hidden="true">&rarr;</span>
-        </a>
+    <div class="sheet" id="sheet" data-sheet data-open="false" data-live="false">
+      <div
+        class="sheet__panel"
+        data-sheet-panel
+        role="dialog"
+        aria-modal="true"
+        aria-label="Menu"
+      >
+        <div class="wrap sheet__in">
+          <div class="sheet__head">
+            <p class="plate-k sheet__k">Shipfront <span aria-hidden="true">&middot;</span> Index</p>
+            <button class="sheet__x" type="button" data-sheet-close>Close</button>
+          </div>
+          <a class="sheet__link" href="index.html"><b>01</b> Home</a>
+          <a class="sheet__link" href="quote.html" aria-current="page"><b>02</b> Get a Quote</a>
+          <a class="sheet__link" href="contact.html"><b>03</b> Contact</a>
+          <a class="btn btn--signal" href="quote.html">
+            Get a Quote <span class="btn__arrow" aria-hidden="true">&rarr;</span>
+          </a>
+          <span class="sheet__rail" aria-hidden="true"></span>
+        </div>
       </div>
+      <button
+        class="sheet__scrim"
+        type="button"
+        data-sheet-scrim
+        data-sheet-close
+        tabindex="-1"
+        aria-label="Close menu"
+      ></button>
     </div>
 
     <main id="main">
@@ -191,7 +219,7 @@
             <aside class="aside" data-stagger="70">
               <div class="card" data-rise>
                 <p class="card__k">The Warehouse</p>
-                <p class="card__v">1933 S. Broadway<br />Los Angeles, CA</p>
+                <p class="card__v">1933 S. Broadway<br />Los Angeles, CA 90007</p>
                 <p class="card__b">
                   Downtown Los Angeles, close to the freeways and the ports.
                 </p>
@@ -248,7 +276,7 @@
             <p class="foot__k">The Warehouse</p>
             <p class="foot__v">
               1933 S. Broadway<br />
-              Los Angeles, CA
+              Los Angeles, CA 90007
             </p>
           </div>
           <div>
