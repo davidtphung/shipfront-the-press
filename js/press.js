@@ -148,8 +148,8 @@
   var PRESS_UP = 0.34;
 
   function pressable(el) {
-    var wide = el.getBoundingClientRect().width > 520;
-    var down = wide ? 0.995 : 0.97;
+    // A wide target travels further for the same scale, so it presses less.
+    var down = el.getBoundingClientRect().width > 520 ? 0.985 : 0.97;
 
     var spring = new Spring(1, {
       response: PRESS_UP,
@@ -221,7 +221,9 @@
 
   function sheet() {
     var panel = document.querySelector("[data-sheet-panel]");
-    var host = document.querySelector("[data-sheet]");
+    // Not [data-sheet]: body carries that one for the scroll lock, and body
+    // comes first in document order.
+    var host = document.querySelector("[data-sheet-host]");
     var scrim = document.querySelector("[data-sheet-scrim]");
     var openers = document.querySelectorAll("[data-sheet-open]");
     var closers = document.querySelectorAll("[data-sheet-close]");
@@ -260,6 +262,9 @@
     function settle(isOpen) {
       opened = isOpen;
       host.setAttribute("data-open", isOpen ? "true" : "false");
+      // The sheet is visibility:hidden until it is live. Mark it live before
+      // anything tries to move focus into it, or the focus call is dropped.
+      if (isOpen) host.setAttribute("data-live", "true");
       document.body.setAttribute("data-sheet", isOpen ? "open" : "closed");
       Array.prototype.forEach.call(openers, function (b) {
         b.setAttribute("aria-expanded", isOpen ? "true" : "false");

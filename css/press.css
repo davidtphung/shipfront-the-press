@@ -1712,30 +1712,42 @@ a.blink:hover .blink__arrow {
   transform: translateY(0);
 }
 
+/* Reveals move with the individual translate and scale properties rather than
+   with transform. Buttons, tiles, and big links are also pressable, and the
+   spring in press.js owns their transform. If the reveal used transform too,
+   its 600ms transition would sit on the same property and drag every press.
+   translate and scale compose with transform, so the two never collide.
+
+   A browser without the individual properties drops those declarations and
+   keeps the opacity fade, which is a fine reveal on its own. */
+
 [data-js="on"] [data-rise] {
   opacity: 0;
-  transform: translate3d(0, 18px, 0);
-  transition: opacity 600ms var(--ease), transform 600ms var(--ease);
+  translate: 0 18px;
+  transition: opacity 600ms var(--ease), translate 600ms var(--ease);
   transition-delay: var(--d, 0ms);
 }
 
 [data-js="on"] [data-rise].is-in {
   opacity: 1;
-  transform: none;
+  translate: none;
 }
 
 /* Tiles arrive a touch further and a touch smaller, then settle. */
 [data-js="on"] [data-rise-plate] {
   opacity: 0;
-  transform: translate3d(0, 24px, 0) scale(0.98);
+  translate: 0 24px;
+  scale: 0.98;
   transform-origin: 50% 100%;
-  transition: opacity 680ms var(--ease), transform 680ms var(--ease);
+  transition: opacity 680ms var(--ease), translate 680ms var(--ease),
+    scale 680ms var(--ease);
   transition-delay: var(--d, 0ms);
 }
 
 [data-js="on"] [data-rise-plate].is-in {
   opacity: 1;
-  transform: none;
+  translate: none;
+  scale: none;
 }
 
 /* --- prefers-reduced-transparency ---------------------------------------- */
@@ -1786,6 +1798,8 @@ a.blink:hover .blink__arrow {
   [data-js="on"] [data-rise],
   [data-js="on"] [data-rise-plate] {
     transform: none !important;
+    translate: none !important;
+    scale: none !important;
     opacity: 1 !important;
     transition: none !important;
   }
