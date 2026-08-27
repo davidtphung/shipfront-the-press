@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 840" width="1200" height="840" role="img" aria-label="Fulfillment">
+  <title>Fulfillment</title>
+  <desc>A packed carton in axonometric view with a shipping label. One barcode bar is marked in red.</desc>
+  <rect width="1200" height="840" fill="#F7F5EF"/>
+  <path d="M40 0V840M80 0V840M120 0V840M160 0V840M200 0V840M240 0V840M280 0V840M320 0V840M360 0V840M400 0V840M440 0V840M480 0V840M520 0V840M560 0V840M600 0V840M640 0V840M680 0V840M720 0V840M760 0V840M800 0V840M840 0V840M880 0V840M920 0V840M960 0V840M1000 0V840M1040 0V840M1080 0V840M1120 0V840M1160 0V840M0 40H1200M0 80H1200M0 120H1200M0 160H1200M0 200H1200M0 240H1200M0 280H1200M0 320H1200M0 360H1200M0 400H1200M0 440H1200M0 480H1200M0 520H1200M0 560H1200M0 600H1200M0 640H1200M0 680H1200M0 720H1200M0 760H1200M0 800H1200" stroke="rgba(17,17,17,.055)" stroke-width="1" fill="none"/>
+  <rect x="872" y="480" width="214" height="168" fill="#F7F5EF" stroke="#111111" stroke-width="2.2"/>
+  <path d="M979 480V648" stroke="#111111" stroke-width="1.8" fill="none"/>
+  <rect x="894" y="508" width="74" height="48" fill="#FFFFFF" stroke="#111111" stroke-width="1.8"/>
+  <path d="M40 648H1160" stroke="#111111" stroke-width="3" fill="none"/>
+  <path d="M64 657v16" stroke="rgba(17,17,17,.22)" stroke-width="1.5" fill="none"/>
+  <path d="M152 657v16" stroke="rgba(17,17,17,.22)" stroke-width="1.5" fill="none"/>
+  <path d="M240 657v16" stroke="rgba(17,17,17,.22)" stroke-width="1.5" fill="none"/>
+  <path d="M328 657v16" stroke="rgba(17,17,17,.22)" stroke-width="1.5" fill="none"/>
+  <path d="M416 657v16" stroke="rgba(17,17,17,.22)" stroke-width="1.5" fill="none"/>
+  <path d="M504 657v16" stroke="rgba(17,17,17,.22)" stroke-width="1.5" fill="none"/>
+  <path d="M592 657v16" stroke="rgba(17,17,17,.22)" stroke-width="1.5" fill="none"/>
+  <path d="M680 657v16" stroke="rgba(17,17,17,.22)" stroke-width="1.5" fill="none"/>
+  <path d="M768 657v16" stroke="rgba(17,17,17,.22)" stroke-width="1.5" fill="none"/>
+  <path d="M856 657v16" stroke="rgba(17,17,17,.22)" stroke-width="1.5" fill="none"/>
+  <path d="M944 657v16" stroke="rgba(17,17,17,.22)" stroke-width="1.5" fill="none"/>
+  <path d="M1032 657v16" stroke="rgba(17,17,17,.22)" stroke-width="1.5" fill="none"/>
+  <path d="M1120 657v16" stroke="rgba(17,17,17,.22)" stroke-width="1.5" fill="none"/>
+  <path d="M40 677H1160" stroke="rgba(17,17,17,.22)" stroke-width="1.5" fill="none"/>
+  <path d="M626 648l192 -126V172l-192 126Z" fill="#F7F5EF" stroke="#111111" stroke-width="2.6"/>
+  <path d="M188 298H626l192 -126H380Z" fill="#FFFFFF" stroke="#111111" stroke-width="2.6"/>
+  <path d="M188 648H626V298H188Z" fill="#FFFFFF" stroke="#111111" stroke-width="2.6"/>
+  <path d="M407 298l192 -126" stroke="#111111" stroke-width="2.2" fill="none"/>
+  <path d="M381 298l192 -126M433 298l192 -126" stroke="rgba(17,17,17,.22)" stroke-width="1.5" fill="none"/>
+  <path d="M626 648V298" stroke="#111111" stroke-width="2.6" fill="none"/>
+  <rect x="236" y="366" width="288" height="204" fill="#FFFFFF" stroke="#111111" stroke-width="2.6"/>
+  <path d="M236 406h288" stroke="#111111" stroke-width="2.2" fill="none"/>
+  <rect x="250" y="378" width="68" height="16" fill="#111111" stroke="#111111" stroke-width="0"/>
+  <rect x="328" y="378" width="38" height="16" fill="none" stroke="#111111" stroke-width="1.6"/>
+  <path d="M250 430h174" stroke="#111111" stroke-width="2" fill="none" opacity="0.85"/>
+  <path d="M250 452h206" stroke="#111111" stroke-width="2" fill="none" opacity="0.69"/>
+  <path d="M250 474h138" stroke="#111111" stroke-width="2" fill="none" opacity="0.53"/>
+  <rect x="250" y="504" width="84" height="40" fill="#FF2D2D" stroke="#111111" stroke-width="0"/>
+  <path d="M266 524h44M298 514l12 10l-12 10" stroke="#111111" stroke-width="2.6" fill="none"/>
+  <rect x="352" y="504" width="3" height="40" fill="#111111" stroke="#111111" stroke-width="0"/>
+  <rect x="360" y="504" width="6" height="40" fill="#111111" stroke="#111111" stroke-width="0"/>
+  <rect x="371" y="504" width="3" height="40" fill="#111111" stroke="#111111" stroke-width="0"/>
+  <rect x="379" y="504" width="9" height="40" fill="#111111" stroke="#111111" stroke-width="0"/>
+  <rect x="393" y="504" width="3" height="40" fill="#111111" stroke="#111111" stroke-width="0"/>
+  <rect x="401" y="504" width="4" height="40" fill="#111111" stroke="#111111" stroke-width="0"/>
+  <rect x="410" y="504" width="7" height="40" fill="#111111" stroke="#111111" stroke-width="0"/>
+  <rect x="422" y="504" width="3" height="40" fill="#111111" stroke="#111111" stroke-width="0"/>
+  <rect x="430" y="504" width="5" height="40" fill="#111111" stroke="#111111" stroke-width="0"/>
+  <rect x="440" y="504" width="3" height="40" fill="#111111" stroke="#111111" stroke-width="0"/>
+  <rect x="448" y="504" width="8" height="40" fill="#111111" stroke="#111111" stroke-width="0"/>
+  <rect x="461" y="504" width="4" height="40" fill="#111111" stroke="#111111" stroke-width="0"/>
+  <rect x="470" y="504" width="3" height="40" fill="#111111" stroke="#111111" stroke-width="0"/>
+  <rect x="478" y="504" width="6" height="40" fill="#111111" stroke="#111111" stroke-width="0"/>
+  <path d="M28 62V28H62M1138 28H1172V62M1172 778V812H1138M62 812H28V778" stroke="rgba(17,17,17,.22)" stroke-width="1.5" fill="none"/>
+</svg>
