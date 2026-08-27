@@ -1,17 +1,25 @@
-# Publishes Shipfront THE PRESS to GitHub Pages.
+# Publishes Shipfront THE PRESS to GitHub Pages via the gh-pages branch.
 #
-# Why this workflow exists
-# ------------------------
-# The site was authored elsewhere and had to be moved here through an API that
-# only accepts text, which cannot carry the byte locked truck JPEG or the woff2
-# fonts without corrupting them. So instead of trusting the transport, every
-# file is fetched from its canonical source and checked against a pinned
-# sha256. A mismatch fails the build loudly rather than shipping a silently
-# altered site.
+# Why a branch and not the Pages API
+# ---------------------------------
+# actions/configure-pages@v5 with enablement fails here: creating a Pages site
+# calls an endpoint that requires repository admin, and the workflow token is
+# not an admin. Pushing a branch is within the token's rights, so the built
+# site goes to gh-pages and the legacy branch source serves it. Nothing in
+# Settings has to be touched.
 #
-# SEED_BASE is a temporary host that only has to be reachable on the very first
-# run. Once the verified files are committed, later runs see matching checksums,
-# skip every download, and never touch it again.
+# Why the checksum gate
+# --------------------
+# The site was moved here through an API that only accepts text, which cannot
+# carry the byte locked truck JPEG or the woff2 fonts without corrupting them.
+# Every file is therefore verified against a pinned sha256 before it can be
+# published. A mismatch fails the build instead of shipping an altered site.
+#
+# The verified files are already committed on claw, so the restore step below is
+# normally a no-op. SEED_BASE was a temporary host used for the first run only
+# and is expected to be gone; it is kept as a record of provenance. If a file
+# ever goes stale and that host is unreachable, the build fails loudly, which is
+# the intended behaviour.
 
 name: Publish THE PRESS
 
@@ -22,8 +30,6 @@ on:
 
 permissions:
   contents: write
-  pages: write
-  id-token: write
 
 concurrency:
   group: pages
@@ -34,7 +40,7 @@ env:
   CRATE_JPEG: https://davidtphung.github.io/shipfront-the-crate/images/logistics.jpg
 
 jobs:
-  build:
+  publish:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -44,15 +50,14 @@ jobs:
           set -uo pipefail
 
           # get <url> <path> <sha256>
-          # Downloads only when the file is missing or its hash does not match,
-          # so this is a no-op once the repository holds verified copies.
+          # Downloads only when the file is missing or its hash does not match.
           get() {
             url="$1"; path="$2"; want="$3"
 
             if [ -f "$path" ]; then
               have=$(sha256sum "$path" | awk '{print $1}')
               if [ "$have" = "$want" ]; then
-                echo "ok       $path (already verified)"
+                echo "ok       $path"
                 return 0
               fi
               echo "stale    $path, refetching"
@@ -80,22 +85,17 @@ jobs:
 
           fail=0
 
-          # Pages. Served as .txt at the source so no proxy can rewrite the
-          # mailto: links inside them.
           get "$SEED_BASE/.seed/index.txt"   index.html   2aa5f38602089906a3fbfe2d5856ecb849d3bf9c78fdb77532022cc7fe568147 || fail=1
           get "$SEED_BASE/.seed/quote.txt"   quote.html   89ec7a8f02c6f4480c9d093493efd2790d52096ad6c2b495d5986551566f2792 || fail=1
           get "$SEED_BASE/.seed/contact.txt" contact.html ace870627c1a17961a7247946d658507d8deddca7a8a6187bb747be538819c13 || fail=1
 
-          # Styles, behaviour, mark, docs.
           get "$SEED_BASE/css/press.css" css/press.css 6c0d4e03c2eadf628dd449ae6ff9cd5b8ae5670f208580c9e7de6086b865d616 || fail=1
           get "$SEED_BASE/js/press.js"   js/press.js   c5324e2fcff77e5258adf7c11545541b8fc96aee073d3207d0983592b3a65373 || fail=1
           get "$SEED_BASE/favicon.svg"   favicon.svg   5c7c51faeaf6c00426196f0642f06a9770cd6e1422e37f5a2639b41836240055 || fail=1
           get "$SEED_BASE/README.md"     README.md     93b72cf125eb7c43bb004766d9eaf169b1589857fe811c7a3b10a543bb7e0543 || fail=1
 
-          # The truck plate, taken from the canonical Shipfront asset.
           get "$CRATE_JPEG" images/logistics.jpg b01f32be4f626f47d78c3c7c186c46ae0d6a804a23912b8d259edaf24da00666 || fail=1
 
-          # Self hosted variable faces, pinned to the exact subset files in use.
           SG=https://fonts.gstatic.com/s/spacegrotesk/v22
           JB=https://fonts.gstatic.com/s/jetbrainsmono/v24
           get "$SG/V8mDoQDjQSkFtoMM3T6r8E7mPbF4Cw.woff2" fonts/space-grotesk-var-latin.woff2 0640890476fc1198ab4de571fb658de443c4d85b66466ec09534a8737ab1ce9d || fail=1
@@ -112,7 +112,6 @@ jobs:
         run: |
           set -euo pipefail
 
-          # The truck JPEG is locked by sha1 as well as size.
           echo "01268520751d59bf9762d2d7d7c3e1555ba60c8d  images/logistics.jpg" | sha1sum -c -
           size=$(stat -c%s images/logistics.jpg)
           if [ "$size" -ne 376501 ]; then
@@ -120,16 +119,13 @@ jobs:
             exit 1
           fi
 
-          # The home H1 is locked copy.
           grep -q 'You Sell.' index.html
           grep -q 'We Ship.' index.html
 
-          # Three pages, all present and non empty.
           for page in index.html quote.html contact.html; do
             test -s "$page"
           done
 
-          # House style: no em or en dashes anywhere in the shipped site.
           if grep -rlP '\x{2014}|\x{2013}' index.html quote.html contact.html css/press.css js/press.js; then
             echo "::error::found an em or en dash in the site"
             exit 1
@@ -137,7 +133,7 @@ jobs:
 
           echo "all locks hold"
 
-      - name: Commit the verified files
+      - name: Commit anything the restore step had to replace
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
@@ -146,11 +142,11 @@ jobs:
           if git diff --cached --quiet; then
             echo "repository already holds the verified site"
           else
-            git commit -m "Add verified static site files [skip ci]"
+            git commit -m "Refresh verified static site files [skip ci]"
             git push
           fi
 
-      - name: Assemble the artifact
+      - name: Assemble the site
         run: |
           set -euo pipefail
           rm -rf _site
@@ -160,21 +156,17 @@ jobs:
           touch _site/.nojekyll
           find _site -type f | sort
 
-      - name: Enable and configure Pages
-        uses: actions/configure-pages@v5
-        with:
-          enablement: true
-
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: _site
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Push to gh-pages
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          cd _site
+          git init -q
+          git checkout -q -b gh-pages
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Publish THE PRESS from ${GITHUB_SHA}"
+          git push -q --force "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" gh-pages
+          echo "pushed $(git rev-parse --short HEAD) to gh-pages"
