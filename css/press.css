@@ -1,0 +1,1804 @@
+/* ==========================================================================
+   SHIPFRONT / TERMINAL
+   Black ground, white type, Kunal cube, one accent. Orange #FF6A00 only on
+   the wordmark bar and Get a Quote. CTA label is #000 on the accent.
+
+   Motion contract, in one place so it is hard to break:
+   - Springs live in js/press.js and own `transform` on anything pressable and
+     on the sheet. CSS never animates transform on those elements, or the two
+     fight over the same property.
+   - CSS owns hover colour, hairlines, and box-shadow. 220ms.
+   - Stills do not move at rest. A capability tile settles its chrome on hover,
+     never the image. Do not generate or replace stills.
+   ========================================================================== */
+
+/* --- Faces ---------------------------------------------------------------- */
+
+@font-face {
+  font-family: "Space Grotesk";
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  src: url("../fonts/space-grotesk-var-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Space Grotesk";
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  src: url("../fonts/space-grotesk-var-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF,
+    U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020,
+    U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 100 800;
+  font-display: swap;
+  src: url("../fonts/jetbrains-mono-var-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 100 800;
+  font-display: swap;
+  src: url("../fonts/jetbrains-mono-var-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF,
+    U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020,
+    U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+/* --- Tokens --------------------------------------------------------------- */
+
+:root {
+  --ground: #000000;
+  --sheet: #111111;
+  --ink: #ffffff;
+  --mute: #8a8a8a;
+  --accent: #ff6a00;
+  --cta-ink: #000000;
+
+  --rule: rgba(255, 255, 255, 0.16);
+  --rule-soft: rgba(255, 255, 255, 0.1);
+  --rule-invert: rgba(255, 255, 255, 0.22);
+
+  /* The plate hairline. Every plate is bounded by this. */
+  --hair-plate: rgba(255, 255, 255, 0.1);
+
+  --display: "Space Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+
+  --gut: clamp(1.25rem, 4vw, 4.5rem);
+  --max: 1440px;
+  --r: 0px;
+  --r-plate: 2px;
+
+  --fast: 160ms;
+  --beat: 220ms;
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+
+  /* Written by js/press.js. --settle is the settling nav, 0 at the top of the
+     page and 1 once the masthead has landed. --read is scroll progress. */
+  --settle: 1;
+  --read: 0;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 17px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+  color-scheme: dark;
+}
+
+body[data-sheet="open"] {
+  overflow: hidden;
+}
+
+img,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+h1,
+h2,
+h3,
+h4,
+p,
+figure,
+blockquote {
+  margin: 0;
+}
+
+ul,
+ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+::selection {
+  background: var(--ink);
+  color: var(--sheet);
+}
+
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+
+.skip {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 999;
+  background: var(--ink);
+  color: var(--sheet);
+  padding: 0.75rem 1rem;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.skip:focus {
+  left: 0;
+}
+
+/* --- Layout --------------------------------------------------------------- */
+
+.wrap {
+  width: 100%;
+  max-width: var(--max);
+  margin-inline: auto;
+  padding-inline: var(--gut);
+}
+
+.eyebrow {
+  font-family: var(--mono);
+  font-size: clamp(0.62rem, 1.1vw, 0.72rem);
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--mute);
+}
+
+.eyebrow .dot {
+  color: var(--ink);
+  margin-inline: 0.55em;
+}
+
+/* The 11px caps label that sits on every plate. */
+.plate-k {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+/* --- Masthead ------------------------------------------------------------- */
+
+/* Settling nav. At the top of the page the bar is bare type sitting on the
+   paper. Once it has been scrolled past it settles: the ink rule draws in,
+   a light paper material comes up under it, and the read rule appears.
+
+   --settle defaults to 1 so a page with no scripting gets the landed, solid
+   masthead rather than a transparent one. press.js takes it to 0 on boot and
+   springs it from there. Nothing here changes layout, so settling can never
+   shift the page under a pointer. */
+
+.masthead {
+  position: sticky;
+  top: 0;
+  z-index: 90;
+  background: var(--ground);
+  background: rgb(0 0 0 / var(--settle));
+  border-bottom: 1px solid var(--ink);
+  border-bottom-color: rgb(255 255 255 / var(--settle));
+}
+
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+  .masthead {
+    background: transparent;
+  }
+
+  .masthead::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    opacity: var(--settle);
+    background: rgb(0 0 0 / 0.82);
+    -webkit-backdrop-filter: saturate(1.06) blur(14px);
+    backdrop-filter: saturate(1.06) blur(14px);
+  }
+}
+
+/* Read rule. Scroll progress in the one signal colour, transform only. */
+.masthead__read {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  background: var(--ink);
+  transform: scaleX(var(--read));
+  transform-origin: 0 50%;
+  pointer-events: none;
+}
+
+.masthead__in {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 74px;
+}
+
+/* Wordmark bar. The one place the accent may sit besides Get a Quote. */
+.brand {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.wordmark-bar {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  background: var(--accent);
+  color: var(--cta-ink);
+  padding: 0.42rem 0.75rem 0.42rem 0.48rem;
+}
+
+.cube {
+  width: 36px;
+  height: 39px;
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+
+.cube svg {
+  width: 36px;
+  height: 39px;
+  overflow: visible;
+}
+
+.brand__name {
+  font-weight: 700;
+  font-size: 1.05rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--cta-ink);
+  line-height: 1;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: clamp(1rem, 2.4vw, 2.2rem);
+}
+
+.nav__link {
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 0.4rem 0;
+  position: relative;
+  color: var(--mute);
+  transition: color var(--beat) var(--ease);
+}
+
+.nav__link::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: var(--ink);
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  transition: transform var(--beat) var(--ease);
+}
+
+.nav__link:hover,
+.nav__link[aria-current="page"] {
+  color: var(--ink);
+}
+
+.nav__link:hover::after,
+.nav__link[aria-current="page"]::after {
+  transform: scaleX(1);
+}
+
+.nav__cta {
+  display: none;
+}
+
+@media (min-width: 900px) {
+  .nav__cta {
+    display: inline-flex;
+  }
+}
+
+.nav--desk {
+  display: none;
+}
+
+@media (min-width: 760px) {
+  .nav--desk {
+    display: flex;
+  }
+}
+
+/* --- Sheet trigger -------------------------------------------------------- */
+
+.burger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: none;
+  border: 1px solid var(--ink);
+  border-radius: var(--r);
+  padding: 0.5rem 0.7rem;
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.burger__bars {
+  display: grid;
+  gap: 3px;
+}
+
+.burger__bars i {
+  display: block;
+  width: 16px;
+  height: 2px;
+  background: var(--ink);
+}
+
+@media (min-width: 760px) {
+  .burger {
+    display: none;
+  }
+}
+
+/* --- Sheet ---------------------------------------------------------------- */
+
+/* An interruptible sheet, not a toggled block. The panel is always in the
+   tree so the spring in press.js has something to hold at any fraction; it is
+   made inert and unfocusable while it is fully closed. */
+
+.sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+.sheet[data-live="true"] {
+  pointer-events: auto;
+  visibility: visible;
+}
+
+.sheet__scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  opacity: 0;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+.sheet__panel {
+  position: relative;
+  z-index: 1;
+  background: var(--ground);
+  border-bottom: 1px solid var(--ink);
+  transform: translate3d(0, -100%, 0);
+  will-change: transform;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.sheet__in {
+  display: grid;
+  padding-block: 1rem 1.75rem;
+}
+
+.sheet__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 74px;
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: 0.5rem;
+}
+
+.sheet__k {
+  color: var(--mute);
+}
+
+.sheet__x {
+  background: none;
+  border: 1px solid var(--ink);
+  border-radius: var(--r);
+  padding: 0.5rem 0.7rem;
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.sheet__link {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+  padding: 1.05rem 0;
+  border-bottom: 1px solid var(--rule-soft);
+  font-size: clamp(1.5rem, 7vw, 2.2rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.sheet__link b {
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: var(--ink);
+}
+
+.sheet__link[aria-current="page"] {
+  color: var(--ink);
+}
+
+.sheet .btn {
+  margin-top: 1.35rem;
+  justify-content: center;
+}
+
+/* The grab rail. It says the sheet can be thrown, and it is the only thing
+   that hints at drag. */
+.sheet__rail {
+  width: 46px;
+  height: 3px;
+  background: var(--rule);
+  margin: 0.75rem auto 0;
+}
+
+/* --- Buttons -------------------------------------------------------------- */
+
+/* transform belongs to the spring in press.js. Everything below is colour,
+   hairline, and shadow, which is why none of these rules mention transform. */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  border: 1px solid transparent;
+  border-radius: var(--r);
+  padding: 1rem 1.6rem;
+  font-family: var(--mono);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color var(--beat) var(--ease),
+    color var(--beat) var(--ease), border-color var(--beat) var(--ease),
+    box-shadow var(--beat) var(--ease);
+}
+
+.btn--sm {
+  padding: 0.72rem 1.1rem;
+  font-size: 0.7rem;
+}
+
+.btn__arrow {
+  transition: transform var(--beat) var(--ease);
+}
+
+.btn:hover .btn__arrow {
+  transform: translateX(4px);
+}
+
+/* Primary: #000 on the accent. Orange only here and on the wordmark bar. */
+.btn--signal {
+  background: var(--accent);
+  color: var(--cta-ink);
+  border-color: var(--accent);
+}
+
+.btn--signal:hover {
+  opacity: 0.92;
+}
+
+.btn--signal:active,
+.btn--signal[data-press="down"] {
+  opacity: 0.84;
+}
+
+/* Ghost on paper */
+.btn--ghost {
+  background: transparent;
+  color: var(--ink);
+  border-color: var(--ink);
+}
+
+.btn--ghost:hover {
+  background: var(--ink);
+  color: var(--sheet);
+}
+
+/* Ghost on ink */
+.btn--ghost-invert {
+  background: transparent;
+  color: var(--ink);
+  border-color: rgba(255, 255, 255, 0.45);
+}
+
+.btn--ghost-invert:hover {
+  background: var(--ink);
+  color: var(--cta-ink);
+  border-color: var(--ink);
+}
+
+/* --- Hero ----------------------------------------------------------------- */
+
+.hero {
+  padding-block: clamp(2.5rem, 7vw, 6rem) clamp(2rem, 5vw, 3.5rem);
+}
+
+.h1 {
+  font-weight: 700;
+  font-size: clamp(4.1rem, 13.6vw, 12.5rem);
+  line-height: 0.85;
+  letter-spacing: -0.045em;
+  margin-top: clamp(1.25rem, 3vw, 2rem);
+}
+
+.h1 .line {
+  display: block;
+}
+
+.h1 em {
+  font-style: normal;
+  color: var(--ink);
+}
+
+.hero__grid {
+  display: grid;
+  gap: clamp(1.75rem, 4vw, 3rem);
+  padding-top: clamp(1.75rem, 4vw, 3rem);
+  align-items: start;
+}
+
+@media (min-width: 1000px) {
+  .hero__grid {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    gap: clamp(2rem, 6vw, 5rem);
+  }
+}
+
+.lede {
+  font-size: clamp(1.15rem, 2vw, 1.5rem);
+  line-height: 1.34;
+  letter-spacing: -0.015em;
+  max-width: 34ch;
+}
+
+.lede strong {
+  font-weight: 700;
+}
+
+.hero__acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.85rem;
+  margin-top: clamp(1.5rem, 3vw, 2.25rem);
+}
+
+.hero__index {
+  border-top: 1px solid var(--ink);
+  padding-top: 0.9rem;
+}
+
+.hero__index li {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+  padding: 0.72rem 0;
+  border-bottom: 1px solid var(--rule-soft);
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+  color: var(--mute);
+}
+
+.hero__index li b {
+  color: var(--ink);
+  font-weight: 700;
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  min-width: 2.4ch;
+}
+
+.hero__index li span {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+/* --- Ticker: repeat a real line ------------------------------------------ */
+
+.ticker {
+  background: var(--ink);
+  color: var(--cta-ink);
+  overflow: hidden;
+  border-block: 1px solid var(--ink);
+  padding-block: clamp(0.9rem, 2vw, 1.3rem);
+}
+
+.ticker__track {
+  display: flex;
+  width: max-content;
+  animation: slide 26s linear infinite;
+}
+
+.ticker__set {
+  display: flex;
+  align-items: center;
+  flex: none;
+}
+
+.ticker__set span {
+  font-weight: 700;
+  font-size: clamp(1.4rem, 3.4vw, 2.5rem);
+  letter-spacing: -0.035em;
+  white-space: nowrap;
+  padding-inline: clamp(0.9rem, 2vw, 1.6rem);
+}
+
+.ticker__set i {
+  width: clamp(9px, 1.2vw, 13px);
+  height: clamp(9px, 1.2vw, 13px);
+  background: var(--cta-ink);
+  flex: none;
+}
+
+@keyframes slide {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.ticker:hover .ticker__track {
+  animation-play-state: paused;
+}
+
+/* --- Plate (truck) -------------------------------------------------------- */
+
+.plate {
+  padding-block: clamp(2.5rem, 6vw, 5rem);
+}
+
+.plate__frame {
+  position: relative;
+  border: 1px solid var(--ink);
+  background: var(--sheet);
+  overflow: hidden;
+}
+
+.plate__img {
+  width: 100%;
+  height: clamp(260px, 46vw, 580px);
+  object-fit: cover;
+  object-position: center 58%;
+  filter: contrast(1.04) saturate(0.92);
+}
+
+.plate__tag {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  display: flex;
+  align-items: stretch;
+  background: var(--ground);
+  border-top: 1px solid var(--ink);
+  border-right: 1px solid var(--ink);
+  max-width: min(92%, 620px);
+}
+
+.plate__tag b {
+  background: var(--ink);
+  color: var(--cta-ink);
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  padding: 0.85rem;
+  display: grid;
+  place-items: center;
+}
+
+.plate__tag p {
+  padding: 0.85rem 1.1rem;
+  font-size: clamp(0.86rem, 1.5vw, 1.02rem);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+/* --- Section furniture ---------------------------------------------------- */
+
+.sec {
+  padding-block: clamp(3rem, 8vw, 7rem);
+}
+
+.sec--rule {
+  border-top: 1px solid var(--ink);
+}
+
+.sec__head {
+  display: grid;
+  gap: clamp(1rem, 2.5vw, 1.5rem);
+  padding-bottom: clamp(2rem, 5vw, 3.5rem);
+}
+
+@media (min-width: 1000px) {
+  .sec__head {
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    align-items: end;
+    gap: clamp(2rem, 5vw, 4rem);
+  }
+}
+
+.h2 {
+  font-weight: 700;
+  font-size: clamp(2.6rem, 8.4vw, 7.5rem);
+  line-height: 0.87;
+  letter-spacing: -0.042em;
+}
+
+.h2 em {
+  font-style: normal;
+  color: var(--ink);
+}
+
+.sec__note {
+  font-size: clamp(1rem, 1.5vw, 1.14rem);
+  line-height: 1.44;
+  color: var(--mute);
+  max-width: 42ch;
+}
+
+/* --- Capability tiles ----------------------------------------------------- */
+
+/* Image first. The still is the rest state and it does not move. Hover and
+   focus settle the chrome around it: the number takes the signal, the plate
+   lifts off paper onto sheet, the rule under the call to action draws in. */
+
+.tiles {
+  display: grid;
+  gap: clamp(1.25rem, 2.6vw, 2.25rem);
+  border-top: 1px solid var(--ink);
+  padding-top: clamp(1.5rem, 3vw, 2.5rem);
+}
+
+@media (min-width: 880px) {
+  .tiles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* A white plate on the paper, hairline bounded, corners square. */
+.tile {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--sheet);
+  border: 1px solid var(--hair-plate);
+  border-radius: var(--r-plate);
+  padding: clamp(0.75rem, 1.4vw, 1rem);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color var(--beat) var(--ease),
+    box-shadow var(--beat) var(--ease);
+}
+
+.tile:hover,
+.tile:focus-visible {
+  border-color: var(--rule);
+  box-shadow: 0 2px 0 var(--rule-soft);
+}
+
+.tile__still {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--r-plate);
+  background: var(--ground);
+  border: 1px solid var(--hair-plate);
+  transition: border-color var(--beat) var(--ease);
+}
+
+.tile:hover .tile__still,
+.tile:focus-visible .tile__still {
+  border-color: var(--rule);
+}
+
+.tile__still img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  object-position: center;
+}
+
+.tile__no {
+  position: absolute;
+  top: 0;
+  left: 0;
+  background: var(--sheet);
+  color: var(--ink);
+  padding: 0.62rem 0.8rem;
+  border-right: 1px solid var(--rule-soft);
+  border-bottom: 1px solid var(--rule-soft);
+  transition: color var(--beat) var(--ease),
+    background-color var(--beat) var(--ease);
+}
+
+.tile:hover .tile__no,
+.tile:focus-visible .tile__no {
+  background: var(--ink);
+  color: var(--cta-ink);
+}
+
+.tile__body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  padding: clamp(1.35rem, 2.4vw, 1.85rem) clamp(0.5rem, 1vw, 0.9rem)
+    clamp(0.6rem, 1.1vw, 0.9rem);
+}
+
+.tile__t {
+  font-weight: 700;
+  font-size: clamp(1.75rem, 3.6vw, 2.6rem);
+  line-height: 0.96;
+  letter-spacing: -0.038em;
+}
+
+.tile__b {
+  color: var(--mute);
+  font-size: clamp(0.98rem, 1.4vw, 1.06rem);
+  line-height: 1.46;
+  margin-top: 0.8rem;
+  max-width: 42ch;
+  flex: 1;
+}
+
+.tile__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  align-self: flex-start;
+  position: relative;
+  margin-top: clamp(1.25rem, 2.4vw, 1.75rem);
+  padding-bottom: 0.5rem;
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.tile__cta::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: var(--ink);
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  transition: transform var(--beat) var(--ease);
+}
+
+.tile:hover .tile__cta::after,
+.tile:focus-visible .tile__cta::after {
+  transform: scaleX(1);
+}
+
+.tile__cta i {
+  font-style: normal;
+  color: var(--ink);
+  transition: transform var(--beat) var(--ease);
+}
+
+.tile:hover .tile__cta i,
+.tile:focus-visible .tile__cta i {
+  transform: translateX(4px);
+}
+
+/* --- Numbered hairline rows ---------------------------------------------- */
+
+.rows {
+  border-top: 1px solid var(--ink);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 3.4ch minmax(0, 1fr);
+  gap: 0.75rem 1.25rem;
+  align-items: start;
+  padding: clamp(1.35rem, 3vw, 2.15rem) 0;
+  border-bottom: 1px solid var(--rule);
+  transition: padding-left var(--beat) var(--ease),
+    background-color var(--beat) var(--ease);
+}
+
+@media (min-width: 900px) {
+  .row {
+    grid-template-columns: 5ch minmax(0, 1.05fr) minmax(0, 1fr) 2.5ch;
+    gap: 2rem;
+    align-items: center;
+  }
+}
+
+.row__no {
+  font-family: var(--mono);
+  font-size: clamp(0.72rem, 1.2vw, 0.86rem);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--mute);
+  transition: color var(--beat) var(--ease);
+}
+
+.row__title {
+  font-weight: 700;
+  font-size: clamp(1.55rem, 4vw, 3rem);
+  line-height: 0.98;
+  letter-spacing: -0.035em;
+}
+
+.row__body {
+  color: var(--mute);
+  font-size: clamp(0.98rem, 1.4vw, 1.08rem);
+  line-height: 1.46;
+  max-width: 46ch;
+}
+
+.row__mark {
+  display: none;
+  justify-self: end;
+  color: var(--ink);
+  font-family: var(--mono);
+  font-weight: 700;
+  opacity: 0;
+  transform: translateX(-6px);
+  transition: opacity var(--beat) var(--ease), transform var(--beat) var(--ease);
+}
+
+@media (min-width: 900px) {
+  .row__mark {
+    display: block;
+  }
+}
+
+.row:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.row:hover .row__no {
+  color: var(--ink);
+}
+
+.row:hover .row__mark {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+@media (min-width: 900px) {
+  .row:hover {
+    padding-left: 0.9rem;
+  }
+}
+
+/* --- Steps ---------------------------------------------------------------- */
+
+.steps {
+  display: grid;
+  gap: 0;
+  border-top: 1px solid var(--ink);
+}
+
+@media (min-width: 760px) {
+  .steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1120px) {
+  .steps {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.step {
+  padding: clamp(1.5rem, 3vw, 2.3rem) 0;
+  border-bottom: 1px solid var(--rule);
+  position: relative;
+}
+
+@media (min-width: 760px) {
+  .step {
+    padding: clamp(1.75rem, 3vw, 2.5rem) clamp(1.1rem, 2.2vw, 2rem);
+  }
+
+  .step:first-child {
+    padding-left: 0;
+  }
+
+  .step + .step {
+    border-left: 1px solid var(--rule);
+  }
+}
+
+@media (min-width: 1120px) {
+  .step:last-child {
+    padding-right: 0;
+  }
+}
+
+.step__no {
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--ink);
+}
+
+.step__no::after {
+  content: "";
+  display: block;
+  width: 26px;
+  height: 3px;
+  background: var(--ink);
+  margin-top: 0.7rem;
+}
+
+.step__title {
+  font-weight: 700;
+  font-size: clamp(1.5rem, 2.6vw, 2.1rem);
+  line-height: 0.98;
+  letter-spacing: -0.035em;
+  margin-top: clamp(1.1rem, 2vw, 1.5rem);
+}
+
+.step__body {
+  color: var(--mute);
+  font-size: 1rem;
+  line-height: 1.46;
+  margin-top: 0.7rem;
+  max-width: 34ch;
+}
+
+/* --- Outcomes ------------------------------------------------------------- */
+
+.outs {
+  display: grid;
+  gap: clamp(1.5rem, 3vw, 2.5rem);
+  border-top: 1px solid var(--ink);
+  padding-top: clamp(1.75rem, 3.5vw, 2.75rem);
+}
+
+@media (min-width: 880px) {
+  .outs {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: clamp(2rem, 4vw, 4rem);
+  }
+}
+
+.out__title {
+  font-weight: 700;
+  font-size: clamp(1.9rem, 3.6vw, 3.1rem);
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+}
+
+.out__title span {
+  color: var(--ink);
+}
+
+.out__body {
+  color: var(--mute);
+  font-size: 1.02rem;
+  line-height: 1.46;
+  margin-top: 0.85rem;
+  max-width: 32ch;
+}
+
+/* --- Ink slab CTA --------------------------------------------------------- */
+
+.slab {
+  background: var(--sheet);
+  color: var(--ink);
+  padding-block: clamp(3rem, 8vw, 6.5rem);
+}
+
+.slab .eyebrow {
+  color: var(--mute);
+}
+
+.slab__h {
+  font-weight: 700;
+  font-size: clamp(2.6rem, 8vw, 7rem);
+  line-height: 0.87;
+  letter-spacing: -0.045em;
+  margin-top: clamp(1.25rem, 2.5vw, 1.75rem);
+}
+
+.slab__h em {
+  font-style: normal;
+  color: var(--ink);
+}
+
+.slab__grid {
+  display: grid;
+  gap: clamp(1.75rem, 4vw, 3rem);
+  margin-top: clamp(2rem, 4vw, 3rem);
+  padding-top: clamp(1.75rem, 3.5vw, 2.5rem);
+  border-top: 1px solid var(--rule-invert);
+}
+
+@media (min-width: 900px) {
+  .slab__grid {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: clamp(2rem, 5vw, 4rem);
+  }
+}
+
+.slab__note {
+  color: var(--mute);
+  font-size: clamp(1rem, 1.5vw, 1.15rem);
+  line-height: 1.46;
+  max-width: 44ch;
+}
+
+.slab__acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.85rem;
+}
+
+/* --- Page hero (Quote / Contact) ----------------------------------------- */
+
+.phero {
+  padding-block: clamp(2.5rem, 6vw, 5rem) clamp(2rem, 4vw, 3rem);
+}
+
+.phero__h {
+  font-weight: 700;
+  font-size: clamp(3.1rem, 11vw, 9.5rem);
+  line-height: 0.85;
+  letter-spacing: -0.045em;
+  margin-top: clamp(1.25rem, 3vw, 2rem);
+}
+
+.phero__h em {
+  font-style: normal;
+  color: var(--ink);
+}
+
+.phero__note {
+  font-size: clamp(1.1rem, 1.8vw, 1.4rem);
+  line-height: 1.36;
+  letter-spacing: -0.015em;
+  max-width: 40ch;
+  margin-top: clamp(1.5rem, 3vw, 2rem);
+}
+
+/* --- Form ----------------------------------------------------------------- */
+
+.formwrap {
+  display: grid;
+  gap: clamp(2rem, 5vw, 3.5rem);
+  border-top: 1px solid var(--ink);
+  padding-top: clamp(2rem, 4vw, 3rem);
+}
+
+@media (min-width: 980px) {
+  .formwrap {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+    gap: clamp(2.5rem, 6vw, 5.5rem);
+  }
+}
+
+.form {
+  display: grid;
+  gap: clamp(1.1rem, 2vw, 1.5rem);
+  max-width: 640px;
+}
+
+.field {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.field label {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--mute);
+}
+
+.field label .req {
+  color: var(--ink);
+}
+
+.field input {
+  width: 100%;
+  background: var(--sheet);
+  border: 1px solid var(--ink);
+  border-radius: var(--r);
+  padding: 1.05rem;
+  font-size: 1.06rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  transition: box-shadow var(--beat) var(--ease),
+    border-color var(--beat) var(--ease);
+}
+
+.field input::placeholder {
+  color: rgba(138, 138, 138, 0.7);
+  font-weight: 400;
+}
+
+.field input:hover {
+  box-shadow: 3px 3px 0 var(--rule);
+}
+
+.field input:focus {
+  outline: none;
+  border-color: var(--ink);
+  box-shadow: 4px 4px 0 var(--ink);
+}
+
+.field[data-bad="true"] input {
+  border-color: var(--ink);
+}
+
+.field__err {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink);
+  display: none;
+}
+
+.field[data-bad="true"] .field__err {
+  display: block;
+}
+
+.form__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem 1.5rem;
+  margin-top: 0.5rem;
+}
+
+.form__fine {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  color: var(--mute);
+  max-width: 30ch;
+  line-height: 1.6;
+}
+
+/* Success */
+.done {
+  display: none;
+  border: 1px solid var(--ink);
+  background: var(--sheet);
+  padding: clamp(1.5rem, 3vw, 2.25rem);
+  max-width: 640px;
+}
+
+.done[data-on="true"] {
+  display: block;
+}
+
+.form[data-off="true"] {
+  display: none;
+}
+
+.done__flag {
+  display: inline-block;
+  background: var(--ink);
+  color: var(--cta-ink);
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 0.4rem 0.65rem;
+}
+
+.done__h {
+  font-weight: 700;
+  font-size: clamp(1.8rem, 3.6vw, 2.6rem);
+  line-height: 0.98;
+  letter-spacing: -0.035em;
+  margin-top: 1.1rem;
+}
+
+.done__b {
+  color: var(--mute);
+  margin-top: 0.85rem;
+  line-height: 1.5;
+  max-width: 42ch;
+}
+
+.done__b a {
+  color: var(--ink);
+  font-weight: 700;
+  border-bottom: 2px solid var(--ink);
+}
+
+/* --- Aside plates --------------------------------------------------------- */
+
+.aside {
+  display: grid;
+  gap: 0;
+  align-content: start;
+  border-top: 1px solid var(--ink);
+}
+
+@media (min-width: 980px) {
+  .aside {
+    border-top: 0;
+  }
+}
+
+.card {
+  padding: clamp(1.35rem, 2.6vw, 1.85rem) 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.aside .card:first-child {
+  padding-top: clamp(1.35rem, 2.6vw, 1.85rem);
+}
+
+@media (min-width: 980px) {
+  .aside .card:first-child {
+    padding-top: 0;
+  }
+}
+
+.card__k {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.card__v {
+  font-weight: 700;
+  font-size: clamp(1.2rem, 2.2vw, 1.6rem);
+  line-height: 1.14;
+  letter-spacing: -0.03em;
+  margin-top: 0.7rem;
+}
+
+.card__v a {
+  border-bottom: 2px solid var(--ink);
+}
+
+.card__v a:hover {
+  color: var(--ink);
+}
+
+.card__b {
+  color: var(--mute);
+  font-size: 0.98rem;
+  line-height: 1.46;
+  margin-top: 0.6rem;
+  max-width: 38ch;
+}
+
+/* --- Contact big links ---------------------------------------------------- */
+
+.blinks {
+  border-top: 1px solid var(--ink);
+}
+
+.blink {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: clamp(1.5rem, 3.4vw, 2.6rem) 0;
+  border-bottom: 1px solid var(--rule);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: padding-left var(--beat) var(--ease),
+    background-color var(--beat) var(--ease);
+}
+
+.blink__t {
+  display: block;
+  font-weight: 700;
+  font-size: clamp(1.7rem, 5.4vw, 4rem);
+  line-height: 0.94;
+  letter-spacing: -0.04em;
+  word-break: break-word;
+}
+
+.blink__k {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--mute);
+  margin-bottom: 0.85rem;
+  display: block;
+}
+
+.blink__arrow {
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: clamp(1.2rem, 2.4vw, 1.9rem);
+  color: var(--ink);
+  flex: none;
+  transition: transform var(--beat) var(--ease);
+}
+
+a.blink:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+@media (min-width: 900px) {
+  a.blink:hover {
+    padding-left: 0.9rem;
+  }
+}
+
+a.blink:hover .blink__arrow {
+  transform: translateX(6px);
+}
+
+/* --- Footer --------------------------------------------------------------- */
+
+.foot {
+  border-top: 1px solid var(--ink);
+  padding-block: clamp(2.5rem, 5vw, 4rem) clamp(1.5rem, 3vw, 2.25rem);
+}
+
+.foot__mark {
+  font-weight: 700;
+  font-size: clamp(3.2rem, 16vw, 13rem);
+  line-height: 0.8;
+  letter-spacing: -0.05em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.foot__mark em {
+  font-style: normal;
+  color: var(--ink);
+}
+
+.foot__grid {
+  display: grid;
+  gap: clamp(1.5rem, 3vw, 2.5rem);
+  margin-top: clamp(2rem, 4vw, 3rem);
+  padding-top: clamp(1.5rem, 3vw, 2rem);
+  border-top: 1px solid var(--ink);
+}
+
+@media (min-width: 820px) {
+  .foot__grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: clamp(2rem, 4vw, 3.5rem);
+  }
+}
+
+.foot__k {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--mute);
+}
+
+.foot__v {
+  margin-top: 0.85rem;
+  font-size: 1.06rem;
+  font-weight: 500;
+  line-height: 1.45;
+  letter-spacing: -0.01em;
+  font-style: normal;
+}
+
+.foot__v a {
+  border-bottom: 2px solid transparent;
+  transition: border-color var(--beat) var(--ease), color var(--beat) var(--ease);
+}
+
+.foot__v a:hover {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+.foot__nav {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.85rem;
+}
+
+.foot__nav a {
+  font-family: var(--mono);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--mute);
+  transition: color var(--beat) var(--ease);
+  width: fit-content;
+}
+
+.foot__nav a:hover {
+  color: var(--ink);
+}
+
+.foot__base {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.75rem 1.5rem;
+  margin-top: clamp(2rem, 4vw, 3rem);
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--rule);
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--mute);
+}
+
+.foot__base b {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+/* --- Reveal --------------------------------------------------------------- */
+
+/* The pre-reveal state is gated on [data-js="on"], which the inline head script
+   sets and then clears if press.js never boots. Without it every headline and
+   section renders in its final position, so a script failure costs the motion
+   and nothing else. */
+
+[data-clip] {
+  display: block;
+  overflow: hidden;
+}
+
+[data-clip] > * {
+  display: block;
+}
+
+[data-js="on"] [data-clip] > * {
+  transform: translateY(102%);
+  transition: transform 760ms var(--ease);
+  transition-delay: var(--d, 0ms);
+}
+
+[data-js="on"] [data-clip].is-in > * {
+  transform: translateY(0);
+}
+
+/* Reveals move with the individual translate and scale properties rather than
+   with transform. Buttons, tiles, and big links are also pressable, and the
+   spring in press.js owns their transform. If the reveal used transform too,
+   its 600ms transition would sit on the same property and drag every press.
+   translate and scale compose with transform, so the two never collide.
+
+   A browser without the individual properties drops those declarations and
+   keeps the opacity fade, which is a fine reveal on its own. */
+
+[data-js="on"] [data-rise] {
+  opacity: 0;
+  translate: 0 18px;
+  transition: opacity 600ms var(--ease), translate 600ms var(--ease);
+  transition-delay: var(--d, 0ms);
+}
+
+[data-js="on"] [data-rise].is-in {
+  opacity: 1;
+  translate: none;
+}
+
+/* Tiles arrive a touch further and a touch smaller, then settle. */
+[data-js="on"] [data-rise-plate] {
+  opacity: 0;
+  translate: 0 24px;
+  scale: 0.98;
+  transform-origin: 50% 100%;
+  transition: opacity 680ms var(--ease), translate 680ms var(--ease),
+    scale 680ms var(--ease);
+  transition-delay: var(--d, 0ms);
+}
+
+[data-js="on"] [data-rise-plate].is-in {
+  opacity: 1;
+  translate: none;
+  scale: none;
+}
+
+/* --- prefers-reduced-transparency ---------------------------------------- */
+
+/* Paper may carry a light material. It may never become grey glass, and when
+   the reader has asked for less transparency it goes solid. */
+
+@media (prefers-reduced-transparency: reduce) {
+  .masthead,
+  .masthead::before {
+    background: #000000;
+    opacity: 1;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  .masthead {
+    border-bottom-color: var(--ink);
+  }
+
+  .sheet__panel {
+    background: var(--ground);
+  }
+
+  .sheet__scrim {
+    background: var(--ink);
+  }
+
+}
+
+/* --- prefers-reduced-motion ----------------------------------------------- */
+
+/* Motion drops to an opacity cross fade. Scale and overshoot are removed, the
+   sheet still opens and closes, and no content is ever left hidden. */
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  [data-clip] > *,
+  [data-rise],
+  [data-rise-plate],
+  [data-js="on"] [data-clip] > *,
+  [data-js="on"] [data-rise],
+  [data-js="on"] [data-rise-plate] {
+    transform: none !important;
+    translate: none !important;
+    scale: none !important;
+    opacity: 1 !important;
+    transition: none !important;
+  }
+
+  .ticker__track {
+    animation: none !important;
+  }
+
+  .btn__arrow,
+  .tile__cta i,
+  .row,
+  .row__mark,
+  .blink,
+  .blink__arrow,
+  .cube,
+  .wordmark-bar,
+  .field input,
+  .nav__link::after,
+  .tile__cta::after {
+    transition: none !important;
+    transform: none !important;
+  }
+
+  .masthead__read {
+    transition: none !important;
+  }
+
+  .sheet__panel {
+    transform: none !important;
+    opacity: 0;
+    transition: opacity 140ms linear;
+  }
+
+  .sheet[data-open="true"] .sheet__panel {
+    opacity: 1;
+  }
+
+  .sheet__scrim {
+    transition: opacity 140ms linear;
+  }
+
+  .sheet__rail {
+    display: none;
+  }
+}
