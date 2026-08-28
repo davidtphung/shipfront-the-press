@@ -82,9 +82,9 @@ Black, white, cube, one accent.
 
 ### Mark
 
-Kunal hex plus inner Y, stem down. Three filled faces `#000`, one accent stroke,
-square caps, miter joins. ViewBox is `0 0 80 80`. This is not a pip, and it is
-not the rejected `32x36` / `M16 3.2` drawing.
+Kunal 1A EVEN: hex plus inner Y, stem down. ViewBox is `0 0 24 26`. Fill `#000`,
+stroke `#FF6A00`, square caps, miter joins. The stem is `M12 12 L12 19`. This is
+not a pip, not an `80` box, and not the rejected `32x36` / `M16 3.2` drawing.
 
 The cube sits on the orange wordmark bar with the SHIPFRONT word. Same geometry
 in `favicon.svg` on the accent field.

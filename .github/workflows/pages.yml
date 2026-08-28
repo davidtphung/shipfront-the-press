@@ -112,17 +112,20 @@ jobs:
             grep -q 'Built by David T Phung' "$page" || bad "$page lost the footer credit"
           done
 
-          # Kunal hex + inner Y, stem down. Fill #000. Square caps, miter.
-          # Not a pip. Not 32x36 / M16 3.2.
+          # Kunal 1A EVEN: viewBox 0 0 24 26, hex + inner Y stem down.
+          # Fill #000, stroke #FF6A00, square caps, miter.
+          # Not a pip. Not 80. Not 32x36 / M16 3.2.
           for file in $pages favicon.svg; do
-            grep -q '40,14' "$file" || bad "$file lost the Kunal cube top"
-            grep -q '40,66' "$file" || bad "$file lost the Kunal Y stem"
+            grep -q 'viewBox="0 0 24 26"' "$file" || bad "$file lost viewBox 0 0 24 26"
+            grep -q 'M7 9 L12 6' "$file" || bad "$file lost the 1A EVEN hex"
+            grep -q 'M12 12 L12 19' "$file" || bad "$file lost the Y stem M12 12 L12 19"
             grep -q 'fill="#000"' "$file" || bad "$file lost the cube fill #000"
+            grep -q 'stroke="#FF6A00"' "$file" || bad "$file lost the cube stroke #FF6A00"
             grep -q 'stroke-linecap="square"' "$file" || bad "$file lost square caps"
             grep -q 'stroke-linejoin="miter"' "$file" || bad "$file lost miter joins"
           done
-          if grep -nE 'viewBox="0 0 32 36"|M16 3\.2' $pages favicon.svg; then
-            bad "found the rejected 32x36 / M16 3.2 cube"
+          if grep -nE 'viewBox="0 0 80 80"|viewBox="0 0 32 36"|M16 3\.2|40,14' $pages favicon.svg; then
+            bad "found a rejected cube (80, 32x36 / M16 3.2, or 40,14)"
           fi
 
           grep -qi 'ff6a00' css/press.css || bad "lost the #FF6A00 accent token"

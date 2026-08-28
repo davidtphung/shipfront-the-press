@@ -295,16 +295,16 @@ select {
 }
 
 .cube {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 39px;
   display: grid;
   place-items: center;
   flex: none;
 }
 
 .cube svg {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 39px;
   overflow: visible;
 }
 
