@@ -1,12 +1,11 @@
-# Shipfront / THE PRESS
+# Shipfront / Terminal
 
-Marketing site for **Shipfront**, a third party logistics warehouse at 1933 S. Broadway,
-Los Angeles, CA 90007.
+Marketing site for **Shipfront**, a third party logistics warehouse at The Reef,
+1933 S. Broadway, Los Angeles, CA 90007.
 
-THE PRESS is the fourth sibling in the Shipfront set, and it deliberately walks away from
-the Terminal look. No night dock, no near black wash, no warm black chrome. This one is
-newsprint: paper canvas, black ink, huge display type, hairline rules, and exactly one
-signal color.
+This is the live three-pager recut to the locked Friday Terminal direction:
+black, white, cube, one accent. Orange `#FF6A00` only on the wordmark bar and
+Get a Quote. The CTA label is `#000` on the accent.
 
 Static HTML, CSS, and JavaScript at the repo root. No build step, no framework, no
 dependencies.
@@ -39,6 +38,11 @@ built and up to date.
 Routing is flat: `/`, `/quote.html`, `/contact.html`. Every link and asset path is
 relative, so the site works unchanged from a subdirectory.
 
+Copy stays with [myshipfront.com](https://www.myshipfront.com/). Product facts
+that are not on that site are not invented here. Claims the lock forbids
+(phone, SLAs, FDA, WMS, temperature) are not restated even when the live page
+uses them.
+
 ## Run it locally
 
 Any static file server works. There is nothing to install and nothing to compile.
@@ -58,117 +62,60 @@ php -S 127.0.0.1:47381
 
 ## Design
 
-Paper, not Terminal.
+Black, white, cube, one accent.
 
-| Role         | Value     | Use                                              |
-| ------------ | --------- | ------------------------------------------------ |
-| Canvas       | `#F7F5EF` | Page background, newsprint tone                  |
-| Sheet        | `#FFFFFF` | Capability tiles, inputs, image frames           |
-| Ink          | `#111111` | Type, hairlines, the closing CTA slab            |
-| Mute         | `#5C5852` | Secondary copy, mono labels                      |
-| Signal       | `#FF2D2D` | The only accent. Primary CTA, numbers, rules     |
+| Role      | Value     | Use                                              |
+| --------- | --------- | ------------------------------------------------ |
+| Ground    | `#000000` | Page background                                  |
+| Sheet     | `#111111` | Tiles, inputs, raised slabs                      |
+| Type      | `#FFFFFF` | Headlines, body, rules                           |
+| Mute      | `#8A8A8A` | Secondary copy, mono labels                      |
+| Accent    | `#FF6A00` | Wordmark bar and Get a Quote only                |
+| CTA ink   | `#000000` | Label on the accent                              |
 
 - **Display face:** Space Grotesk, weights 400 through 700, self hosted as a variable
-  woff2 in `fonts/`. Used heavy and tight for every headline.
+  woff2 in `fonts/`.
 - **Index face:** JetBrains Mono, for eyebrows, numbers, labels, and buttons.
-- No Inter, no serif, no glass, no frost. Border radius is 0, and 2px on plates. Rules
-  are 1px hairlines.
-- Plates carry an 11px caps label and a `rgba(0, 0, 0, .06)` hairline.
-- CTA contrast is locked: ink on red for primary, white on ink for the ghost on dark
-  sections. Never white on red, and never a weak orange.
+- No Inter, no serif, no glass, no frost. Border radius is 0. Rules are 1px
+  hairlines.
+- CTA contrast is locked: `#000` on `#FF6A00`. Never white on orange.
 
 ### Mark
 
-A cube wireframe treated as a **press stamp**: a 1px ink square with the cube inside.
-Hover flips the strokes to the signal red. No yaw, no glow, no pulse. The cube geometry
-starts on the path `M7 9 L12 6` and is drawn on integer coordinates in a 24 unit box.
-Same geometry in `favicon.svg`.
+Kunal 1A EVEN: hex plus inner Y, stem down. ViewBox is `0 0 24 26`. Fill `#000`,
+stroke `#FF6A00`, square caps, miter joins. The stem is `M12 12 L12 19`. This is
+not a pip, not an `80` box, and not the rejected `32x36` / `M16 3.2` drawing.
+
+The cube sits on the orange wordmark bar with the SHIPFRONT word. Same geometry
+in `favicon.svg` on the accent field.
 
 ### Capability tiles
 
-The four things Shipfront does are the spine of Home, and each one is a tile rather than
-a row: a large still, then the title, a short body, and one path out, which is always
-Get a Quote. Image first.
+The four things Shipfront does are the spine of Home: Warehousing, Fulfillment,
+eCommerce Integrations, Location. Each tile is a still, then the title, a short
+body, and one path out, which is always Get a Quote.
 
 - The still is the rest state. It does not drift, breathe, or scale on hover.
-- Hover and keyboard focus settle the chrome around the still instead: the number takes
-  the signal, the hairlines darken, the rule under the call to action draws in, and the
-  arrow steps 4px.
-- Every word is in the markup at rest. Nothing is revealed only on hover, so a keyboard
-  and a screen reader get the same copy a pointer does.
+- Do not generate or replace stills. The truck JPEG and the four plate SVGs
+  stay byte for byte as committed.
+- Every word is in the markup at rest.
 - The tiles are a plain `ul`. They are never tabs.
-
-### Plates
-
-`tools/plates.py` draws the four capability stills into `images/plate-*.svg`. They are
-drawn rather than photographed because the only photograph this site ships is the byte
-locked truck JPEG, and a stock warehouse would be inventing a building.
-
-```bash
-python3 tools/plates.py
-```
-
-Each plate is ink on paper on a register grid, with crop marks, hairline rules, square
-corners, and exactly one element in the signal red. Rerunning the script is idempotent.
-
-| Plate                       | Subject                                              |
-| --------------------------- | ---------------------------------------------------- |
-| `plate-warehousing.svg`     | Front elevation of a loaded four bay pallet rack      |
-| `plate-fulfillment.svg`     | A packed carton on the belt, carrying its label       |
-| `plate-integrations.svg`    | Five storefronts wired down into one receiving dock   |
-| `plate-location.svg`        | The downtown street plan, the door marked on Broadway |
 
 ### Motion
 
 Motion is a spring library and three rules, all in `js/press.js`.
 
-1. **Feedback lands on pointer down, not on click.** A press is acknowledged the moment a
-   finger touches the target: `scale(0.97)` over roughly 100ms, then a critically damped
-   settle back to rest.
-2. **Everything is interruptible.** Springs carry their own velocity, so a new target can
-   arrive mid flight and the value keeps moving instead of restarting. Input is never
-   locked while something animates.
-3. **Only transform and opacity animate per frame.** Colour, hairlines, and shadows are
-   left to 220ms CSS transitions.
+1. **Feedback lands on pointer down, not on click.**
+2. **Everything is interruptible.**
+3. **Only transform and opacity animate per frame.**
 
-Springs are critically damped, damping `1.0` and response `0.3` to `0.4`, so nothing
-overshoots. They drive the press feedback, the sheet, and the settling masthead. They do
-not drive the stills, which are at rest by definition.
+`prefers-reduced-motion: reduce` drops all of it to an opacity cross fade.
+`prefers-reduced-transparency: reduce` takes the masthead and the sheet to solid
+`#000000`.
 
-- **Sheet.** The mobile menu is a live value from 0 to 1, not a toggled block. It can be
-  opened, grabbed while it is still springing open, dragged back, and thrown, and the same
-  spring drives every one of those. Pulling past the open stop rubber bands. Release hands
-  the gesture velocity straight to the spring, and the throw is judged on where it is
-  heading rather than where it stopped. In and out take the same path.
-- **Settling masthead.** At the top of the page the bar is bare type on the paper. Once it
-  has been scrolled past, the ink rule draws in, a light paper material comes up under it,
-  and the read rule under the bar tracks scroll position with a `scaleX`. The bar's height
-  never changes, so settling cannot shift the page under a pointer.
-- **Reveals.** Headlines clip up from behind their own overflow box. Sections rise 18px,
-  tiles rise 24px from `scale(0.98)`, staggered by `data-stagger` on the parent.
-- **Ticker.** The `You Sell. We Ship.` band is a real line from the site repeated, not a
-  fake live telemetry marquee. It pauses on hover.
-
-`prefers-reduced-motion: reduce` drops all of it to an opacity cross fade. Scale and
-overshoot are removed, the springs resolve instantly to their targets, the sheet fades
-rather than slides, the marquee stops, and no content is ever left hidden.
-
-`prefers-reduced-transparency: reduce` takes the masthead and the sheet to solid `#F7F5EF`
-and removes the grain.
-
-The pre-reveal state is deliberately opt-in. A small inline script in each `<head>` sets
-`data-js="on"` on `<html>`, and every hidden starting style is scoped to that attribute.
-So the motion is additive rather than load bearing:
-
-- Scripting disabled, or `press.js` blocked or 404: the attribute is never set, so every
-  headline and section renders in its final position. The page loses the animation and
-  nothing else. `--settle` defaults to `1`, so the masthead is solid rather than
-  transparent.
-- `press.js` present but failing to boot: the same inline script clears the attribute
-  after 2 seconds unless `boot()` has set `data-ready="true"`, which reveals everything.
-
-This matters because the reveal works by hiding content first. Without the guard, any
-script failure would leave the page blank.
+The pre-reveal state is opt-in via `data-js="on"` in each `<head>`. Scripting
+disabled, or `press.js` blocked: every headline and section renders in its final
+position.
 
 ## Structure
 
@@ -176,13 +123,12 @@ script failure would leave the page blank.
 index.html            Home
 quote.html            Get a Quote
 contact.html          Contact
-favicon.svg           Cube stamp
+favicon.svg           Kunal cube on the accent field
 css/press.css         Tokens, layout, components, motion contract
 js/press.js           Springs, press, sheet, settling masthead, reveals, form
 fonts/                Space Grotesk + JetBrains Mono, latin and latin-ext woff2
 images/logistics.jpg  Freight truck plate, byte locked
-images/plate-*.svg    The four drawn capability stills
-tools/plates.py       Draws images/plate-*.svg
+images/plate-*.svg    The four capability stills. Do not regenerate.
 ```
 
 ### The truck image
@@ -211,27 +157,29 @@ a confirmation panel that also builds a prefilled `mailto:` link to
 
 This site describes a warehouse. It does not describe a software product.
 
-- Shipfront is a 3PL at 1933 S. Broadway, Los Angeles, CA 90007. It is not a freight OS.
+- Shipfront is a 3PL at The Reef, 1933 S. Broadway, Los Angeles, CA 90007. Reef is
+  an address.
 - Home H1 is exactly `You Sell. We Ship.`
 - The four things we talk about: Warehousing, Fulfillment, eCommerce Integrations,
   Location.
-- No invented SLAs, no FDA or temperature claims, no WMS, no metrics, no shipment IDs, no
-  carrier tables, no AI chat, no Pricing page, no Developers page, no Sign in, no Request
-  access.
+- No invented phone. No invented SLAs, no FDA or temperature claims, no WMS, no
+  metrics, no shipment IDs, no carrier tables, no AI chat, no Pricing page, no
+  Developers page, no Sign in, no Request access.
 - No em dashes anywhere in the copy. Periods, commas, parentheses.
+- No cartoons.
 
-The publish workflow enforces all of this on every run, along with the page count, the
-palette, the mark geometry, the address and zip, the three form fields, the absence of a
-phone number, and the footer credit. A broken lock fails the build instead of shipping.
+The publish workflow enforces all of this on every run. A broken lock fails the
+build instead of shipping.
 
 ## Accessibility
 
-Skip link, one `h1` per page, hairline focus rings in the signal color, labeled form
-fields with `role="alert"` error slots, `aria-current` on the active nav item, a sheet
-that is a real `dialog` with `aria-modal`, a focus trap, Escape to close, focus returned
-to the control that opened it, `inert` on the page behind it, full reduced motion and
-reduced transparency support, and readable content with scripting turned off.
+Skip link, one `h1` per page, hairline focus rings, labeled form fields with
+`role="alert"` error slots, `aria-current` on the active nav item, a sheet that
+is a real `dialog` with `aria-modal`, a focus trap, Escape to close, focus
+returned to the control that opened it, `inert` on the page behind it, full
+reduced motion and reduced transparency support, and readable content with
+scripting turned off.
 
 ## Credits
 
-Built by David T Phung. info@myshipfront.com.
+Built by David T Phung

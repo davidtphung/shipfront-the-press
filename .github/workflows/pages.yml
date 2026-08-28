@@ -1,15 +1,6 @@
-# Publishes Shipfront THE PRESS to GitHub Pages via the gh-pages branch.
-#
-# Why a branch and not the Pages API
-# ---------------------------------
-# actions/configure-pages@v5 with enablement fails here: creating a Pages site
-# calls an endpoint that requires repository admin, and the workflow token is
-# not an admin. Pushing a branch is within the token's rights, so the built
-# site goes to gh-pages and the legacy branch source serves it. Nothing in
-# Settings has to be touched by this workflow.
-#
-# Turning Pages on is still a one time manual step: Settings, Pages, Source
-# "Deploy from a branch", branch gh-pages, folder / (root).
+# Publishes Shipfront Terminal to GitHub Pages.
+# Pushes gh-pages for the branch source, and also deploys through
+# actions/deploy-pages so the first run can turn Pages on.
 #
 # What is gated, and what is not
 # ------------------------------
@@ -18,25 +9,21 @@
 # their bytes is a corruption rather than an edit and the build refuses to ship.
 # They are pinned by hash below.
 #
-# The HTML, CSS, JavaScript, and the drawn SVG plates are source. They are
-# meant to change, so they are checked against the design lock instead: the
-# page count, the H1, the palette, the mark geometry, the address, the form,
-# the footer credit, and the no dash rule.
-#
-# An earlier revision of this file also tried to restore the text files from a
-# temporary seed host over HTTP. That host is gone, and the files have been
-# committed here since, so the restore step has been removed. Nothing in the
-# build reaches the network any more.
+# The HTML, CSS, and JavaScript are source. They are checked against the Friday
+# Terminal lock: black, white, cube, one accent. Orange #FF6A00 only on the
+# wordmark bar and Get a Quote. The stills are not regenerated.
 
-name: Publish THE PRESS
+name: Publish Terminal
 
 on:
   push:
-    branches: [claw]
+    branches: [claw, cursor/terminal-lock-bf35]
   workflow_dispatch:
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
 
 concurrency:
   group: pages
@@ -80,8 +67,7 @@ jobs:
           fail=0
           bad() { echo "::error::$1"; fail=1; }
 
-          # Three pages, no more. Any other page at the repo root is a new
-          # marketing page and this site does not get one.
+          # Three pages, no more.
           for page in $pages; do
             test -s "$page" || bad "$page is missing or empty"
           done
@@ -90,19 +76,16 @@ jobs:
             bad "unexpected page(s): $(echo "$extra" | tr '\n' ' ')"
           fi
 
-          # The H1 on Home.
           grep -q 'You Sell.' index.html || bad "Home lost 'You Sell.'"
           grep -q 'We Ship.'  index.html || bad "Home lost 'We Ship.'"
 
-          # The four things, and never as tabs.
           for thing in Warehousing Fulfillment 'eCommerce Integrations' Location; do
             grep -q "$thing" index.html || bad "Home lost '$thing'"
           done
           if grep -q 'role="tab' $pages; then
-            bad "found role=tab, the four things are rows and tiles, never tabs"
+            bad "found role=tab, the four things are never tabs"
           fi
 
-          # The form is three fields and there is no phone number anywhere.
           for field in 'name="name"' 'name="email"' 'name="company"'; do
             grep -q "$field" quote.html || bad "quote form lost $field"
           done
@@ -110,39 +93,76 @@ jobs:
           if grep -riE 'href="tel:' $pages; then
             bad "found a telephone link, this site has no phone number"
           fi
+          if grep -riE 'name="phone"|type="tel"|autocomplete="tel"' $pages; then
+            bad "found a phone field, the form is Name, Email, Company only"
+          fi
 
-          # The address, with the zip, and the one inbox.
           for page in $pages; do
             grep -q '1933 S. Broadway' "$page" || bad "$page lost the street address"
             grep -q '90007' "$page" || bad "$page lost the zip"
+            grep -q 'The Reef' "$page" || bad "$page lost The Reef as an address"
             grep -q 'mailto:info@myshipfront.com' "$page" || bad "$page lost the mailto"
-            grep -q 'Built by <b>David T Phung</b>' "$page" || bad "$page lost the footer credit"
+            grep -q 'Built by David T Phung' "$page" || bad "$page lost the footer credit"
           done
 
-          # The mark is the 1A EVEN cube stamp. Not 2G YAW.
+          # Kunal 1A EVEN: viewBox 0 0 24 26, hex + inner Y stem down.
+          # Fill #000, stroke #FF6A00, square caps, miter.
+          # Not a pip. Not 80. Not 32x36 / M16 3.2.
           for file in $pages favicon.svg; do
-            grep -q 'M7 9 L12 6' "$file" || bad "$file lost the cube stamp geometry"
+            grep -q 'viewBox="0 0 24 26"' "$file" || bad "$file lost viewBox 0 0 24 26"
+            grep -q 'M7 9 L12 6' "$file" || bad "$file lost the 1A EVEN hex"
+            grep -q 'M12 12 L12 19' "$file" || bad "$file lost the Y stem M12 12 L12 19"
+            grep -q 'fill="#000"' "$file" || bad "$file lost the cube fill #000"
+            grep -q 'stroke="#FF6A00"' "$file" || bad "$file lost the cube stroke #FF6A00"
+            grep -q 'stroke-linecap="square"' "$file" || bad "$file lost square caps"
+            grep -q 'stroke-linejoin="miter"' "$file" || bad "$file lost miter joins"
           done
-
-          # Paint. One signal, and it is not the SHEET orange.
-          grep -qi 'f7f5ef' css/press.css || bad "lost the paper token"
-          grep -qi 'ff2d2d' css/press.css || bad "lost the signal token"
-          if grep -riE 'ff6a00' $source_files images/*.svg; then
-            bad "found #FF6A00, this is THE PRESS and not SHEET"
+          if grep -nE 'viewBox="0 0 80 80"|viewBox="0 0 32 36"|M16 3\.2|40,14' $pages favicon.svg; then
+            bad "found a rejected cube (80, 32x36 / M16 3.2, or 40,14)"
           fi
 
-          # Never white on red. Read the primary button rule and check the
-          # colour it actually sets.
+          grep -qi 'ff6a00' css/press.css || bad "lost the #FF6A00 accent token"
+          grep -qi -- '--ground: #000000' css/press.css || bad "lost the black ground"
+          grep -qi -- '--ink: #ffffff' css/press.css || bad "lost the white type"
+
           primary=$(awk '/^\.btn--signal \{/,/^\}/' css/press.css)
-          if ! printf '%s' "$primary" | grep -q 'color: var(--ink)'; then
-            bad "the primary button must set ink on the red fill"
+          if ! printf '%s' "$primary" | grep -q 'color: var(--cta-ink)'; then
+            bad "the primary button must set #000 on the accent"
           fi
-          if printf '%s' "$primary" | grep -q 'color: var(--sheet)'; then
-            bad "the primary button is ink on red, never white on red"
+          if printf '%s' "$primary" | grep -q 'color: var(--ink)'; then
+            bad "the primary button is #000 on the accent, never white on orange"
+          fi
+          if ! printf '%s' "$primary" | grep -q 'background: var(--accent)'; then
+            bad "the primary button must fill with the accent"
           fi
 
-          # No em or en dashes anywhere the reader can see them.
-          if grep -rlP '\x{2014}|\x{2013}' $source_files images/*.svg; then
+          bar=$(awk '/^\.wordmark-bar \{/,/^\}/' css/press.css)
+          if ! printf '%s' "$bar" | grep -q 'background: var(--accent)'; then
+            bad "the wordmark bar must carry the accent"
+          fi
+
+          # Accent is reserved. Only the wordmark bar and the CTA may use it.
+          python3 - <<'PY'
+import pathlib, re, sys
+css = pathlib.Path("css/press.css").read_text()
+current = None
+fail = False
+for i, line in enumerate(css.splitlines(), 1):
+    m = re.match(r"^(\.[A-Za-z0-9_-]+)", line)
+    if m:
+        current = m.group(1)
+    if "var(--accent)" in line and current not in {".wordmark-bar", ".btn--signal"}:
+        print(f"::error::accent leaked in {current} at css/press.css:{i}")
+        fail = True
+if fail:
+    sys.exit(1)
+PY
+
+          if grep -riE 'FDA|WMS|temperature-control|temperature control' $pages; then
+            bad "found a forbidden product claim"
+          fi
+
+          if grep -rlP '\x{2014}|\x{2013}' $source_files; then
             bad "found an em or en dash in the site"
           fi
 
@@ -174,6 +194,18 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
-          git commit -q -m "Publish THE PRESS from ${GITHUB_SHA}"
+          git commit -q -m "Publish Terminal from ${GITHUB_SHA}"
           git push -q --force "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" gh-pages
           echo "pushed $(git rev-parse --short HEAD) to gh-pages"
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Deploy Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
