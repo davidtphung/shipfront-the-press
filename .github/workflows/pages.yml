@@ -1,15 +1,6 @@
-# Publishes Shipfront Terminal to GitHub Pages via the gh-pages branch.
-#
-# Why a branch and not the Pages API
-# ---------------------------------
-# actions/configure-pages@v5 with enablement fails here: creating a Pages site
-# calls an endpoint that requires repository admin, and the workflow token is
-# not an admin. Pushing a branch is within the token's rights, so the built
-# site goes to gh-pages and the legacy branch source serves it. Nothing in
-# Settings has to be touched by this workflow.
-#
-# Turning Pages on is still a one time manual step: Settings, Pages, Source
-# "Deploy from a branch", branch gh-pages, folder / (root).
+# Publishes Shipfront Terminal to GitHub Pages.
+# Pushes gh-pages for the branch source, and also deploys through
+# actions/deploy-pages so the first run can turn Pages on.
 #
 # What is gated, and what is not
 # ------------------------------
@@ -26,11 +17,13 @@ name: Publish Terminal
 
 on:
   push:
-    branches: [claw]
+    branches: [claw, cursor/terminal-lock-bf35]
   workflow_dispatch:
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
 
 concurrency:
   group: pages
@@ -39,6 +32,9 @@ concurrency:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
 
@@ -204,3 +200,15 @@ jobs:
           git commit -q -m "Publish Terminal from ${GITHUB_SHA}"
           git push -q --force "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" gh-pages
           echo "pushed $(git rev-parse --short HEAD) to gh-pages"
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Deploy Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
