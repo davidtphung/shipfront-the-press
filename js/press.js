@@ -1,6 +1,7 @@
-/* SHIPFRONT / THE PRESS
+/* SHIPFRONT / TERMINAL
    Springs, press feedback, an interruptible sheet, a settling masthead, and
-   the clip up reveals.
+   the clip up reveals. Paint lives in css/press.css. This file does not
+   invent copy or draw stills.
 
    Three rules this file is built around.
 

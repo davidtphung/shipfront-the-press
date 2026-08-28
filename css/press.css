@@ -1,6 +1,7 @@
 /* ==========================================================================
-   SHIPFRONT / THE PRESS
-   Bold editorial paper. Ink on newsprint, one red signal, radius zero.
+   SHIPFRONT / TERMINAL
+   Black ground, white type, Kunal cube, one accent. Orange #FF6A00 only on
+   the wordmark bar and Get a Quote. CTA label is #000 on the accent.
 
    Motion contract, in one place so it is hard to break:
    - Springs live in js/press.js and own `transform` on anything pressable and
@@ -8,7 +9,7 @@
      fight over the same property.
    - CSS owns hover colour, hairlines, and box-shadow. 220ms.
    - Stills do not move at rest. A capability tile settles its chrome on hover,
-     never the image.
+     never the image. Do not generate or replace stills.
    ========================================================================== */
 
 /* --- Faces ---------------------------------------------------------------- */
@@ -60,18 +61,19 @@
 /* --- Tokens --------------------------------------------------------------- */
 
 :root {
-  --paper: #f7f5ef;
-  --sheet: #ffffff;
-  --ink: #111111;
-  --mute: #5c5852;
-  --signal: #ff2d2d;
+  --ground: #000000;
+  --sheet: #111111;
+  --ink: #ffffff;
+  --mute: #8a8a8a;
+  --accent: #ff6a00;
+  --cta-ink: #000000;
 
-  --rule: rgba(17, 17, 17, 0.16);
-  --rule-soft: rgba(17, 17, 17, 0.09);
+  --rule: rgba(255, 255, 255, 0.16);
+  --rule-soft: rgba(255, 255, 255, 0.1);
   --rule-invert: rgba(255, 255, 255, 0.22);
 
-  /* The plate hairline. Every white or paper plate is bounded by this. */
-  --hair-plate: rgba(0, 0, 0, 0.06);
+  /* The plate hairline. Every plate is bounded by this. */
+  --hair-plate: rgba(255, 255, 255, 0.1);
 
   --display: "Space Grotesk", "Helvetica Neue", Arial, sans-serif;
   --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
@@ -104,7 +106,7 @@ html {
 
 body {
   margin: 0;
-  background: var(--paper);
+  background: var(--ground);
   color: var(--ink);
   font-family: var(--display);
   font-weight: 400;
@@ -113,19 +115,7 @@ body {
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   overflow-x: hidden;
-}
-
-/* Press grain. Paper is never perfectly flat. */
-body::after {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: 400;
-  pointer-events: none;
-  opacity: 0.05;
-  mix-blend-mode: multiply;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.86' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='260' height='260' filter='url(%23g)'/%3E%3C/svg%3E");
-  background-size: 260px 260px;
+  color-scheme: dark;
 }
 
 body[data-sheet="open"] {
@@ -169,12 +159,12 @@ select {
 }
 
 ::selection {
-  background: var(--signal);
+  background: var(--ink);
   color: var(--sheet);
 }
 
 :focus-visible {
-  outline: 2px solid var(--signal);
+  outline: 2px solid var(--ink);
   outline-offset: 3px;
 }
 
@@ -215,7 +205,7 @@ select {
 }
 
 .eyebrow .dot {
-  color: var(--signal);
+  color: var(--ink);
   margin-inline: 0.55em;
 }
 
@@ -244,10 +234,10 @@ select {
   position: sticky;
   top: 0;
   z-index: 90;
-  background: var(--paper);
-  background: rgb(247 245 239 / var(--settle));
+  background: var(--ground);
+  background: rgb(0 0 0 / var(--settle));
   border-bottom: 1px solid var(--ink);
-  border-bottom-color: rgb(17 17 17 / var(--settle));
+  border-bottom-color: rgb(255 255 255 / var(--settle));
 }
 
 @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
@@ -261,7 +251,7 @@ select {
     inset: 0;
     z-index: -1;
     opacity: var(--settle);
-    background: rgb(247 245 239 / 0.78);
+    background: rgb(0 0 0 / 0.82);
     -webkit-backdrop-filter: saturate(1.06) blur(14px);
     backdrop-filter: saturate(1.06) blur(14px);
   }
@@ -274,7 +264,7 @@ select {
   right: 0;
   bottom: -1px;
   height: 2px;
-  background: var(--signal);
+  background: var(--ink);
   transform: scaleX(var(--read));
   transform-origin: 0 50%;
   pointer-events: none;
@@ -288,72 +278,43 @@ select {
   min-height: 74px;
 }
 
-/* Mark: a press stamp, not a lightbox */
+/* Wordmark bar. The one place the accent may sit besides Get a Quote. */
 .brand {
   display: inline-flex;
   align-items: center;
-  gap: 0.7rem;
+  text-decoration: none;
 }
 
-.stamp {
-  width: 40px;
-  height: 40px;
+.wordmark-bar {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  background: var(--accent);
+  color: var(--cta-ink);
+  padding: 0.42rem 0.75rem 0.42rem 0.48rem;
+}
+
+.cube {
+  width: 32px;
+  height: 32px;
   display: grid;
   place-items: center;
-  border: 1px solid var(--ink);
-  background: transparent;
-  transition: border-color var(--beat) var(--ease);
+  flex: none;
 }
 
-.stamp svg {
-  width: 26px;
-  height: 26px;
-}
-
-.stamp path {
-  stroke: var(--ink);
-  stroke-width: 1.4;
-  stroke-linecap: square;
-  stroke-linejoin: miter;
-  fill: none;
-  transition: stroke var(--beat) var(--ease);
-}
-
-.brand:hover .stamp,
-.brand:focus-visible .stamp {
-  border-color: var(--signal);
-}
-
-.brand:hover .stamp path,
-.brand:focus-visible .stamp path {
-  stroke: var(--signal);
-}
-
-.brand__type {
-  display: flex;
-  flex-direction: column;
-  line-height: 1;
+.cube svg {
+  width: 32px;
+  height: 32px;
+  overflow: visible;
 }
 
 .brand__name {
   font-weight: 700;
-  font-size: 1.18rem;
-  letter-spacing: -0.03em;
+  font-size: 1.05rem;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-}
-
-.brand__tag {
-  font-family: var(--mono);
-  font-size: 0.6rem;
-  font-weight: 700;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: var(--mute);
-  margin-top: 0.32rem;
-}
-
-.brand__tag b {
-  color: var(--signal);
+  color: var(--cta-ink);
+  line-height: 1;
 }
 
 .nav {
@@ -381,7 +342,7 @@ select {
   right: 0;
   bottom: 0;
   height: 2px;
-  background: var(--signal);
+  background: var(--ink);
   transform: scaleX(0);
   transform-origin: 0 50%;
   transition: transform var(--beat) var(--ease);
@@ -477,7 +438,7 @@ select {
 .sheet__scrim {
   position: absolute;
   inset: 0;
-  background: rgba(17, 17, 17, 0.42);
+  background: rgba(0, 0, 0, 0.72);
   opacity: 0;
   border: 0;
   padding: 0;
@@ -487,7 +448,7 @@ select {
 .sheet__panel {
   position: relative;
   z-index: 1;
-  background: var(--paper);
+  background: var(--ground);
   border-bottom: 1px solid var(--ink);
   transform: translate3d(0, -100%, 0);
   will-change: transform;
@@ -542,11 +503,11 @@ select {
   font-size: 0.66rem;
   font-weight: 700;
   letter-spacing: 0.16em;
-  color: var(--signal);
+  color: var(--ink);
 }
 
 .sheet__link[aria-current="page"] {
-  color: var(--signal);
+  color: var(--ink);
 }
 
 .sheet .btn {
@@ -601,21 +562,20 @@ select {
   transform: translateX(4px);
 }
 
-/* Primary: ink on red. Never white on red. */
+/* Primary: #000 on the accent. Orange only here and on the wordmark bar. */
 .btn--signal {
-  background: var(--signal);
-  color: var(--ink);
-  border-color: var(--signal);
-  box-shadow: 4px 4px 0 var(--ink);
+  background: var(--accent);
+  color: var(--cta-ink);
+  border-color: var(--accent);
 }
 
 .btn--signal:hover {
-  box-shadow: 7px 7px 0 var(--ink);
+  opacity: 0.92;
 }
 
 .btn--signal:active,
 .btn--signal[data-press="down"] {
-  box-shadow: 2px 2px 0 var(--ink);
+  opacity: 0.84;
 }
 
 /* Ghost on paper */
@@ -633,14 +593,14 @@ select {
 /* Ghost on ink */
 .btn--ghost-invert {
   background: transparent;
-  color: var(--sheet);
+  color: var(--ink);
   border-color: rgba(255, 255, 255, 0.45);
 }
 
 .btn--ghost-invert:hover {
-  background: var(--sheet);
-  color: var(--ink);
-  border-color: var(--sheet);
+  background: var(--ink);
+  color: var(--cta-ink);
+  border-color: var(--ink);
 }
 
 /* --- Hero ----------------------------------------------------------------- */
@@ -663,7 +623,7 @@ select {
 
 .h1 em {
   font-style: normal;
-  color: var(--signal);
+  color: var(--ink);
 }
 
 .hero__grid {
@@ -716,7 +676,7 @@ select {
 }
 
 .hero__index li b {
-  color: var(--signal);
+  color: var(--ink);
   font-weight: 700;
   font-size: 0.68rem;
   letter-spacing: 0.1em;
@@ -732,7 +692,7 @@ select {
 
 .ticker {
   background: var(--ink);
-  color: var(--sheet);
+  color: var(--cta-ink);
   overflow: hidden;
   border-block: 1px solid var(--ink);
   padding-block: clamp(0.9rem, 2vw, 1.3rem);
@@ -761,7 +721,7 @@ select {
 .ticker__set i {
   width: clamp(9px, 1.2vw, 13px);
   height: clamp(9px, 1.2vw, 13px);
-  background: var(--signal);
+  background: var(--cta-ink);
   flex: none;
 }
 
@@ -805,15 +765,15 @@ select {
   bottom: 0;
   display: flex;
   align-items: stretch;
-  background: var(--paper);
+  background: var(--ground);
   border-top: 1px solid var(--ink);
   border-right: 1px solid var(--ink);
   max-width: min(92%, 620px);
 }
 
 .plate__tag b {
-  background: var(--signal);
-  color: var(--ink);
+  background: var(--ink);
+  color: var(--cta-ink);
   font-family: var(--mono);
   font-size: 0.66rem;
   font-weight: 700;
@@ -864,7 +824,7 @@ select {
 
 .h2 em {
   font-style: normal;
-  color: var(--signal);
+  color: var(--ink);
 }
 
 .sec__note {
@@ -918,7 +878,7 @@ select {
   position: relative;
   overflow: hidden;
   border-radius: var(--r-plate);
-  background: var(--paper);
+  background: var(--ground);
   border: 1px solid var(--hair-plate);
   transition: border-color var(--beat) var(--ease);
 }
@@ -951,8 +911,8 @@ select {
 
 .tile:hover .tile__no,
 .tile:focus-visible .tile__no {
-  background: var(--signal);
-  color: var(--ink);
+  background: var(--ink);
+  color: var(--cta-ink);
 }
 
 .tile__body {
@@ -1002,7 +962,7 @@ select {
   right: 0;
   bottom: 0;
   height: 2px;
-  background: var(--signal);
+  background: var(--ink);
   transform: scaleX(0);
   transform-origin: 0 50%;
   transition: transform var(--beat) var(--ease);
@@ -1015,7 +975,7 @@ select {
 
 .tile__cta i {
   font-style: normal;
-  color: var(--signal);
+  color: var(--ink);
   transition: transform var(--beat) var(--ease);
 }
 
@@ -1075,7 +1035,7 @@ select {
 .row__mark {
   display: none;
   justify-self: end;
-  color: var(--signal);
+  color: var(--ink);
   font-family: var(--mono);
   font-weight: 700;
   opacity: 0;
@@ -1090,11 +1050,11 @@ select {
 }
 
 .row:hover {
-  background: rgba(255, 45, 45, 0.045);
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .row:hover .row__no {
-  color: var(--signal);
+  color: var(--ink);
 }
 
 .row:hover .row__mark {
@@ -1159,7 +1119,7 @@ select {
   font-size: 0.74rem;
   font-weight: 700;
   letter-spacing: 0.14em;
-  color: var(--signal);
+  color: var(--ink);
 }
 
 .step__no::after {
@@ -1167,7 +1127,7 @@ select {
   display: block;
   width: 26px;
   height: 3px;
-  background: var(--signal);
+  background: var(--ink);
   margin-top: 0.7rem;
 }
 
@@ -1211,7 +1171,7 @@ select {
 }
 
 .out__title span {
-  color: var(--signal);
+  color: var(--ink);
 }
 
 .out__body {
@@ -1225,13 +1185,13 @@ select {
 /* --- Ink slab CTA --------------------------------------------------------- */
 
 .slab {
-  background: var(--ink);
-  color: var(--sheet);
+  background: var(--sheet);
+  color: var(--ink);
   padding-block: clamp(3rem, 8vw, 6.5rem);
 }
 
 .slab .eyebrow {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--mute);
 }
 
 .slab__h {
@@ -1244,7 +1204,7 @@ select {
 
 .slab__h em {
   font-style: normal;
-  color: var(--signal);
+  color: var(--ink);
 }
 
 .slab__grid {
@@ -1264,7 +1224,7 @@ select {
 }
 
 .slab__note {
-  color: rgba(255, 255, 255, 0.68);
+  color: var(--mute);
   font-size: clamp(1rem, 1.5vw, 1.15rem);
   line-height: 1.46;
   max-width: 44ch;
@@ -1292,7 +1252,7 @@ select {
 
 .phero__h em {
   font-style: normal;
-  color: var(--signal);
+  color: var(--ink);
 }
 
 .phero__note {
@@ -1340,7 +1300,7 @@ select {
 }
 
 .field label .req {
-  color: var(--signal);
+  color: var(--ink);
 }
 
 .field input {
@@ -1357,7 +1317,7 @@ select {
 }
 
 .field input::placeholder {
-  color: rgba(92, 88, 82, 0.65);
+  color: rgba(138, 138, 138, 0.7);
   font-weight: 400;
 }
 
@@ -1367,12 +1327,12 @@ select {
 
 .field input:focus {
   outline: none;
-  border-color: var(--signal);
-  box-shadow: 4px 4px 0 var(--signal);
+  border-color: var(--ink);
+  box-shadow: 4px 4px 0 var(--ink);
 }
 
 .field[data-bad="true"] input {
-  border-color: var(--signal);
+  border-color: var(--ink);
 }
 
 .field__err {
@@ -1381,7 +1341,7 @@ select {
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--signal);
+  color: var(--ink);
   display: none;
 }
 
@@ -1425,8 +1385,8 @@ select {
 
 .done__flag {
   display: inline-block;
-  background: var(--signal);
-  color: var(--ink);
+  background: var(--ink);
+  color: var(--cta-ink);
   font-family: var(--mono);
   font-size: 0.66rem;
   font-weight: 700;
@@ -1453,7 +1413,7 @@ select {
 .done__b a {
   color: var(--ink);
   font-weight: 700;
-  border-bottom: 2px solid var(--signal);
+  border-bottom: 2px solid var(--ink);
 }
 
 /* --- Aside plates --------------------------------------------------------- */
@@ -1492,7 +1452,7 @@ select {
   font-weight: 700;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: var(--signal);
+  color: var(--ink);
 }
 
 .card__v {
@@ -1504,11 +1464,11 @@ select {
 }
 
 .card__v a {
-  border-bottom: 2px solid var(--signal);
+  border-bottom: 2px solid var(--ink);
 }
 
 .card__v a:hover {
-  color: var(--signal);
+  color: var(--ink);
 }
 
 .card__b {
@@ -1562,13 +1522,13 @@ select {
   font-family: var(--mono);
   font-weight: 700;
   font-size: clamp(1.2rem, 2.4vw, 1.9rem);
-  color: var(--signal);
+  color: var(--ink);
   flex: none;
   transition: transform var(--beat) var(--ease);
 }
 
 a.blink:hover {
-  background: rgba(255, 45, 45, 0.045);
+  background: rgba(255, 255, 255, 0.04);
 }
 
 @media (min-width: 900px) {
@@ -1599,7 +1559,7 @@ a.blink:hover .blink__arrow {
 
 .foot__mark em {
   font-style: normal;
-  color: var(--signal);
+  color: var(--ink);
 }
 
 .foot__grid {
@@ -1641,8 +1601,8 @@ a.blink:hover .blink__arrow {
 }
 
 .foot__v a:hover {
-  border-color: var(--signal);
-  color: var(--signal);
+  border-color: var(--ink);
+  color: var(--ink);
 }
 
 .foot__nav {
@@ -1663,7 +1623,7 @@ a.blink:hover .blink__arrow {
 }
 
 .foot__nav a:hover {
-  color: var(--signal);
+  color: var(--ink);
 }
 
 .foot__base {
@@ -1758,7 +1718,7 @@ a.blink:hover .blink__arrow {
 @media (prefers-reduced-transparency: reduce) {
   .masthead,
   .masthead::before {
-    background: #f7f5ef;
+    background: #000000;
     opacity: 1;
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
@@ -1769,16 +1729,13 @@ a.blink:hover .blink__arrow {
   }
 
   .sheet__panel {
-    background: var(--paper);
+    background: var(--ground);
   }
 
   .sheet__scrim {
     background: var(--ink);
   }
 
-  body::after {
-    display: none;
-  }
 }
 
 /* --- prefers-reduced-motion ----------------------------------------------- */
@@ -1814,7 +1771,8 @@ a.blink:hover .blink__arrow {
   .row__mark,
   .blink,
   .blink__arrow,
-  .stamp,
+  .cube,
+  .wordmark-bar,
   .field input,
   .nav__link::after,
   .tile__cta::after {
