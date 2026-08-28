@@ -32,9 +32,6 @@ concurrency:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
 
@@ -144,22 +141,22 @@ jobs:
             bad "the wordmark bar must carry the accent"
           fi
 
-          # Accent is reserved. CSS may name --accent only for the bar and CTA.
-          accent_uses=$(grep -n 'var(--accent)' css/press.css | grep -v '^[[:space:]]*/\*' || true)
-          while IFS= read -r line; do
-            [ -z "$line" ] && continue
-            case "$line" in
-              *wordmark-bar*|*btn--signal*|*--accent:*|*background: var(--accent)*|*border-color: var(--accent)*) ;;
-              *)
-                # Allow the two legal rule bodies already checked above.
-                num=${line%%:*}
-                nearby=$(awk -v n="$num" 'NR>=n-8 && NR<=n {print}' css/press.css)
-                if ! printf '%s' "$nearby" | grep -qE 'wordmark-bar|btn--signal'; then
-                  bad "accent leaked at css/press.css:$line"
-                fi
-                ;;
-            esac
-          done <<< "$accent_uses"
+          # Accent is reserved. Only the wordmark bar and the CTA may use it.
+          python3 - <<'PY'
+import pathlib, re, sys
+css = pathlib.Path("css/press.css").read_text()
+current = None
+fail = False
+for i, line in enumerate(css.splitlines(), 1):
+    m = re.match(r"^(\.[A-Za-z0-9_-]+)", line)
+    if m:
+        current = m.group(1)
+    if "var(--accent)" in line and current not in {".wordmark-bar", ".btn--signal"}:
+        print(f"::error::accent leaked in {current} at css/press.css:{i}")
+        fail = True
+if fail:
+    sys.exit(1)
+PY
 
           if grep -riE 'FDA|WMS|temperature-control|temperature control' $pages; then
             bad "found a forbidden product claim"
